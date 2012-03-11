@@ -1,3 +1,6 @@
+mongoose = require('mongoose')
+mongoose.connect('mongodb://swyp:mongo4swyp2012@ds031587.mongolab.com:31587/heroku_app3235025')
+
 swypApp = require('zappa').app -> 
   @use 'static'
   @enable 'default layout' # this is hella convenient
@@ -6,7 +9,7 @@ swypApp = require('zappa').app ->
   @io.set("polling duration", 10); 
 
   @get '/': -> 
-    @render index: {foo: 'bar', fb_id: secrets.fb.id}
+    @render index: {foo: 'bar'}
 
   @view index: ->
     @title = 'Inline template'
@@ -16,41 +19,51 @@ swypApp = require('zappa').app ->
                 '/zappa/zappa',
                 '/index']
 
-    coffeescript ->
-      window.fbAsyncInit = ->
-        FB.init {
-          appId: '194436507332185',
-          status: true, cookie: true, xfbml: true
-        }
-
-        FB.getLoginStatus (res)->
-          switch res.status
-            when 'connected'
-              uid = res.authResponse.userID
-              access_token = res.authResponse.accessToken
-              console.log "authorized with uid: #{uid} and access token: #{access_token}"
-            when 'not_authorized'
-              console.log 'user is logged in, but has not authorized app'
-            else
-              $('.fb-login-button').show()
-
-        FB.Event.subscribe 'auth.authResponseChange', (res)->
-          console.log "The status of the session is: #{res.status}"
-
-        return true
+    if process.env.NODE_ENV is 'production'
+      coffeescript ->
+        window.app_id = '359933034051162'
+    else
+      coffeescript ->
+        window.app_id = '194436507332185'
 
     script src: '/facebook.js'
                 
     h1 @title
     p @foo
     div '#fb-root', ->
-      div '.fb-login-button', ->
+      a '#logout.hidden', href: "#", ->
+        'Logout'
+      div '.fb-login-button.hidden', ->
         'Login with Facebook'
 
   @on connection: ->
     @emit welcome:  {time: new Date()}
 
   @coffee '/facebook.js': ->
+    handleFBStatus = (res)->
+      switch res.status
+        when 'connected'
+          uid = res.authResponse.userID
+          access_token = res.authResponse.accessToken
+          console.log "authorized with uid: #{uid} and access token: #{access_token}"
+          $('#logout').show()
+        when 'not_authorized'
+          console.log 'user is logged in, but has not authorized app'
+        else # user is not logged in
+          $('.fb-login-button').show()
+
+    window.fbAsyncInit = ->
+      FB.init {
+        appId: app_id,
+        status: true, cookie: true, xfbml: true
+      }
+
+      FB.getLoginStatus handleFBStatus
+      FB.Event.subscribe 'auth.authResponseChange', handleFBStatus
+
+      return true
+
+    
     ((d)->
       js = id = 'facebook-jssdk'
       ref = d.getElementsByTagName('script')[0]
@@ -63,6 +76,12 @@ swypApp = require('zappa').app ->
     )(document)
 
   @client '/index.js': ->
+    $('document').ready ->
+      $('#logout').click (e)->
+        e.preventDefault()
+        FB.logout (res)->
+          console.log res
+
     @on welcome: ->
         $('body').append "Hey Ethan, socket.io says the time!: #{@data.time}"
     
