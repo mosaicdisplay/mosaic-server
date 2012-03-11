@@ -8,6 +8,7 @@
   "dependencies": {
     "coffee-script": "1.2.0",
     "zappa": "0.3.3",
+    "mongoose": "2.5.10",
     "mongoose-auth": "0.0.12"
   }
 }
