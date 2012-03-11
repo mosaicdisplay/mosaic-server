@@ -1,0 +1,28 @@
+#node-school
+node_modules
+
+# xcode noise
+build/*
+*.pbxuser
+*.mode1v3
+
+# old skool
+.svn
+
+# osx noise
+.DS_Store
+profile
+
+src/swypPhotos.xcodeproj/project.xcworkspace/xcuserdata/*
+*.xcodeproj/xcuserdata/*
+*.xcodeproj/project.xcworkspace/xcuserdata/*
+*.xcuserdatad/*
+*xcodeproj/project.xcworkspace/*
+
+*.perspective
+*.perspectivev3
+*.swp
+*~.nib
+aho.perspectivev3
+aho.xcuserdatad
+alist.xcuserdatad
