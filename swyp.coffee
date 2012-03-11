@@ -1,34 +1,29 @@
 swypApp = require('zappa').app -> 
-	@io.set("transports", ["xhr-polling"]); 
-	@io.set("polling duration", 10); 
+  @enable 'default layout' # this is hella convenient
 
-	@get '/': -> 
-		@render index: {foo: 'bar'}
+  @io.set("transports", ["xhr-polling"]); 
+  @io.set("polling duration", 10); 
 
-	@view index: ->
-		@title = 'Inline template'
-		h1 @title
-		p @foo
+  @get '/': -> 
+    @render index: {foo: 'bar'}
 
-	@view layout: ->
-		doctype 5
-		html ->
-			head -> 
-				title @title
-				script src: '/socket.io/socket.io.js'
-				script src: '/zappa/jquery.js'
-				script src: '/zappa/zappa.js'
-				script src: '/index.js'
-			body @body
+  @view index: ->
+    @title = 'Inline template'
+    @scripts = ['/socket.io/socket.io', 
+                '/zappa/jquery',
+                '/zappa/zappa',
+                '/index']
+    h1 @title
+    p @foo
 
-	@on connection: ->
-		@emit welcome:  {time: new Date()}
+  @on connection: ->
+    @emit welcome:  {time: new Date()}
 
-	@client '/index.js': ->
-		@on welcome: ->
-		    $('body').append "Hey Ethan, socket.io says the time!: #{@data.time}"
-		
-		@connect()
+  @client '/index.js': ->
+    @on welcome: ->
+        $('body').append "Hey Ethan, socket.io says the time!: #{@data.time}"
+    
+    @connect()
 
-port = if process.env.PORT >0 then process.env.PORT else 3000
+port = if process.env.PORT > 0 then process.env.PORT else 3000
 swypApp.app.listen port
