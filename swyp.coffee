@@ -26,7 +26,7 @@ swypApp = require('zappa').app ->
 
 	@client '/index.js': ->
 		@on welcome: ->
-		    $('body').append "Server time: #{@data.time}"
+		    $('body').append "Hey Ethan, socket.io says the time!: #{@data.time}"
 		
 		@connect()
 
