@@ -1,6 +1,4 @@
-port = if process.env.PORT >0 then process.env.PORT else 3000
-console.log 'launching to port ', port
-require('zappa') 'swypserver.herokuapp.com', port, -> 
+swypApp = require('zappa').app -> 
 	@io.set("transports", ["xhr-polling"]); 
 	@io.set("polling duration", 10); 
 
@@ -9,4 +7,5 @@ require('zappa') 'swypserver.herokuapp.com', port, ->
 	@on connection: ->
 		@emit welcome:  {time: new Date()}
 
-
+port = if process.env.PORT >0 then process.env.PORT else 3000
+swypApp.app.listen port
