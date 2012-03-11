@@ -3,6 +3,7 @@
 "version": "0.0.1",
 "dependencies": {
   "coffee-script": "1.2.0",
-  "zappa": "0.3.3" 
+  "zappa": "0.3.3",
+  "mongoose-auth": "0.0.12"
   }
 }
