@@ -26,3 +26,6 @@ src/swypPhotos.xcodeproj/project.xcworkspace/xcuserdata/*
 aho.perspectivev3
 aho.xcuserdatad
 alist.xcuserdatad
+
+#swyp specific
+*.js
