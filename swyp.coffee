@@ -30,14 +30,80 @@ swypApp = require('zappa').app ->
                 
     h1 @title
     p @foo
+    form ->
+      button 'swypOut'
+
     div '#fb-root', ->
       a '#logout.hidden', href: "#", ->
         'Logout'
       div '.fb-login-button.hidden', ->
         'Login with Facebook'
 
+  tokenEval = (token) -> 
+    if token != "" 
+      return {id: "userID"} #user lookup
+    else return false; 
+
   @on connection: ->
     @emit welcome:  {time: new Date()}
+  
+  @on statusUpdate: ->
+    if user = tokenEval(@data.token) == false
+      @emit unauthorized: ->
+      return
+    location	= @data.location
+    @emit updateGood: ->
+    @broadcast nearbyRefresh:
+      {preferred: [user],\
+       otherNearby: "null"}
+
+  @on swypOut: ->
+    if user = tokenEval(@data.token) == false
+      @emit unauthorized: ->
+      return
+    #implement function to evaluate user token and abort if invalid
+    contentID 		= "newSwypID"
+    supportedTypes	= @data.fileTypes 
+    previewImage	= @data.previewImage
+    recipientTo		= @data.to
+    fromSender		= user 
+    console.log "swyp out created supports types #{@supportedTypes}"
+    @emit swypOutPending: ->
+      {id: contentID}
+    @broadcast swypInAvailable: -> #will limit to nearby users later
+      {id: contentID, \
+       fileTypes: supportedTypes,\
+       preview: previewImage,\
+       from: fromSender}
+  
+  @on swypIn: ->
+    if user = tokenEval(@data.token) == false
+      @emit unauthorized: ->
+      return
+    contentID 	= @data.id
+    contentType = @data.type 
+    uploadURL	= "http://newUploadURL"
+    @emit dataPending: ->
+      {id: contentID, \
+       type: contentType}
+    @broadcast dataRequest: ->
+      {id: contentID, \
+       type: contentType,
+       uploadURL: uploadURL}
+     
+  @on uploadCompleted: ->
+    if user = tokenEval(@data.token) == false
+      @emit unauthorized: ->
+      return
+    contentID 	= @data.id
+    contentType = @data.type 
+    uploadURL	= "http://dbRetrievedUploadURL"
+    console.log @io.sockets
+    @broadcast dataAvailable: ->
+       {id: contentID, \
+       type: contentType,\
+       uploadURL: uploadURL}
+    #io.sockets.sockets[sid].json.send -> #send to particularly waiting clients
 
   @coffee '/facebook.js': ->
     handleFBStatus = (res)->
@@ -81,6 +147,12 @@ swypApp = require('zappa').app ->
         e.preventDefault()
         FB.logout (res)->
           console.log res
+
+    $ =>
+      $('button').click (e) =>
+        @emit swypOut: {token: "theToken", previewImage: "NONE!", supportedTypes: ["image/png", "image/jpeg"]}
+        $('#box').val('').focus()
+        e.preventDefault()
 
     @on welcome: ->
         $('body').append "Hey Ethan, socket.io says the time!: #{@data.time}"
