@@ -8,6 +8,13 @@ swypApp = require('zappa').app ->
   @io.set("transports", ["xhr-polling"]); 
   @io.set("polling duration", 10); 
 
+  tokenEval = (token) -> 
+    if token != ""
+      console.log "found user for token #{token}" 
+      return {id: "userfromtoken#{token}"} #user lookup
+    else return false; 
+
+
   @get '/': -> 
     @render index: {foo: 'bar'}
 
@@ -39,26 +46,21 @@ swypApp = require('zappa').app ->
       div '.fb-login-button.hidden', ->
         'Login with Facebook'
 
-  tokenEval = (token) -> 
-    if token != "" 
-      return {id: "userID"} #user lookup
-    else return false; 
-
   @on connection: ->
     @emit welcome:  {time: new Date()}
   
   @on statusUpdate: ->
-    if user = tokenEval(@data.token) == false
+    if (user = tokenEval(@data.token)) == false
       @emit unauthorized: ->
       return
     location	= @data.location
     @emit updateGood: ->
-    @broadcast nearbyRefresh:
+    @broadcast nearbyRefresh: \
       {preferred: [user],\
        otherNearby: "null"}
 
   @on swypOut: ->
-    if user = tokenEval(@data.token) == false
+    if (user = tokenEval(@data.token)) == false
       @emit unauthorized: ->
       return
     #implement function to evaluate user token and abort if invalid
@@ -66,40 +68,44 @@ swypApp = require('zappa').app ->
     supportedTypes	= @data.fileTypes 
     previewImage	= @data.previewImage
     recipientTo		= @data.to
-    fromSender		= user 
-    console.log "swyp out created supports types #{@supportedTypes}"
-    @emit swypOutPending: ->
-      {id: contentID}
-    @broadcast swypInAvailable: -> #will limit to nearby users later
+    fromSender		= user
+    swypTime		= new Date()
+    console.log "swyp out created supports types #{supportedTypes}"
+    @emit swypOutPending: 
       {id: contentID, \
+      time: swypTime}
+    #will limit to nearby users later
+    @broadcast swypInAvailable: 
+       {id: contentID, \
        fileTypes: supportedTypes,\
        preview: previewImage,\
-       from: fromSender}
+       from: fromSender, \
+       time: swypTime}
   
   @on swypIn: ->
-    if user = tokenEval(@data.token) == false
+    if (user = tokenEval(@data.token)) == false
       @emit unauthorized: ->
       return
     contentID 	= @data.id
     contentType = @data.type 
     uploadURL	= "http://newUploadURL"
-    @emit dataPending: ->
+    @emit dataPending: 
       {id: contentID, \
        type: contentType}
-    @broadcast dataRequest: ->
+    @broadcast dataRequest: 
       {id: contentID, \
        type: contentType,
        uploadURL: uploadURL}
      
   @on uploadCompleted: ->
-    if user = tokenEval(@data.token) == false
+    if (user = tokenEval(@data.token)) == false
       @emit unauthorized: ->
       return
     contentID 	= @data.id
     contentType = @data.type 
     uploadURL	= "http://dbRetrievedUploadURL"
     console.log @io.sockets
-    @broadcast dataAvailable: ->
+    @broadcast dataAvailable: 
        {id: contentID, \
        type: contentType,\
        uploadURL: uploadURL}
@@ -150,14 +156,24 @@ swypApp = require('zappa').app ->
 
     $ =>
       $('button').click (e) =>
-        @emit swypOut: {token: "theToken", previewImage: "NONE!", supportedTypes: ["image/png", "image/jpeg"]}
+        @emit swypOut: {token: "theToken", previewImage: "NONE!", fileTypes: ["image/png", "image/jpeg"]}
         $('#box').val('').focus()
         e.preventDefault()
+    
+    @on swypInAvailable: ->
+      console.log "swyp in available"
+      $('body').append "<br /> @ #{@data.time} swypIn avail w.ID #{@data.id} from #{@data.from.id} with types: #{@data.fileTypes}"
+
+    @on swypOutPending: ->
+      $('body').append "<br /> did swypOut @ #{@data.time} w.ID #{@data.id}"
+
 
     @on welcome: ->
-        $('body').append "Hey Ethan, socket.io says the time!: #{@data.time}"
+      $('body').append "Hey Ethan, socket.io says the time!: #{@data.time}"
+	     
     
     @connect()
 
 port = if process.env.PORT > 0 then process.env.PORT else 3000
 swypApp.app.listen port
+console.log "starting on port # #{port}"
