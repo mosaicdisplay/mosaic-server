@@ -118,11 +118,11 @@ swypApp = require('zappa').app ->
           uid = res.authResponse.userID
           access_token = res.authResponse.accessToken
           console.log "authorized with uid: #{uid} and access token: #{access_token}"
-          $('#logout').show()
+          $('#logout').removeClass('hidden')
         when 'not_authorized'
           console.log 'user is logged in, but has not authorized app'
         else # user is not logged in
-          $('.fb-login-button').show()
+          $('.fb-login-button').removeClass('hidden')
 
     window.fbAsyncInit = ->
       FB.init {
