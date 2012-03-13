@@ -43,7 +43,7 @@ swypApp = require('zappa').app ->
     div '#fb-root', ->
       a '#logout.hidden', href: "#", ->
         'Logout'
-      div '.fb-login-button.hidden', ->
+      div '#fb-login.fb-login-button.hidden', ->
         'Login with Facebook'
 
   @on connection: ->
@@ -53,7 +53,7 @@ swypApp = require('zappa').app ->
     if (user = tokenEval(@data.token)) == false
       @emit unauthorized: ->
       return
-    location	= @data.location
+    location  = @data.location
     @emit updateGood: ->
     @broadcast nearbyRefresh: \
       {preferred: [user],\
@@ -64,12 +64,12 @@ swypApp = require('zappa').app ->
       @emit unauthorized: ->
       return
     #implement function to evaluate user token and abort if invalid
-    contentID 		= "newSwypID"
-    supportedTypes	= @data.fileTypes 
-    previewImage	= @data.previewImage
-    recipientTo		= @data.to
-    fromSender		= user
-    swypTime		= new Date()
+    contentID      = "newSwypID"
+    supportedTypes = @data.fileTypes 
+    previewImage   = @data.previewImage
+    recipientTo    = @data.to
+    fromSender     = user
+    swypTime       = new Date()
     console.log "swyp out created supports types #{supportedTypes}"
     @emit swypOutPending: 
       {id: contentID, \
@@ -86,9 +86,9 @@ swypApp = require('zappa').app ->
     if (user = tokenEval(@data.token)) == false
       @emit unauthorized: ->
       return
-    contentID 	= @data.id
+    contentID   = @data.id
     contentType = @data.type 
-    uploadURL	= "http://newUploadURL"
+    uploadURL   = "http://newUploadURL"
     @emit dataPending: 
       {id: contentID, \
        type: contentType}
@@ -101,9 +101,9 @@ swypApp = require('zappa').app ->
     if (user = tokenEval(@data.token)) == false
       @emit unauthorized: ->
       return
-    contentID 	= @data.id
+    contentID   = @data.id
     contentType = @data.type 
-    uploadURL	= "http://dbRetrievedUploadURL"
+    uploadURL   = "http://dbRetrievedUploadURL"
     console.log @io.sockets
     @broadcast dataAvailable: 
        {id: contentID, \
@@ -119,10 +119,12 @@ swypApp = require('zappa').app ->
           access_token = res.authResponse.accessToken
           console.log "authorized with uid: #{uid} and access token: #{access_token}"
           $('#logout').removeClass('hidden')
+          $('#fb-login').addClass('hidden')
         when 'not_authorized'
           console.log 'user is logged in, but has not authorized app'
         else # user is not logged in
-          $('.fb-login-button').removeClass('hidden')
+          $('#logout').addClass('hidden')
+          $('#fb-login').removeClass('hidden')
 
     window.fbAsyncInit = ->
       FB.init {
@@ -137,13 +139,13 @@ swypApp = require('zappa').app ->
 
     
     ((d)->
-      js = id = 'facebook-jssdk'
+      js  = id = 'facebook-jssdk'
       ref = d.getElementsByTagName('script')[0]
       if d.getElementById id then return
       js = d.createElement 'script'
-      js.id = id
+      js.id    = id
       js.async = true
-      js.src = "//connect.facebook.net/en_US/all.js"
+      js.src   = "//connect.facebook.net/en_US/all.js"
       ref.parentNode.insertBefore js, ref
     )(document)
 
@@ -167,10 +169,8 @@ swypApp = require('zappa').app ->
     @on swypOutPending: ->
       $('body').append "<br /> did swypOut @ #{@data.time} w.ID #{@data.id}"
 
-
     @on welcome: ->
       $('body').append "Hey Ethan, socket.io says the time!: #{@data.time}"
-	     
     
     @connect()
 
