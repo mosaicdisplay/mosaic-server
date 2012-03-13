@@ -1,8 +1,40 @@
-mongoose = require('mongoose')
+mongoose     = require('mongoose')
+mongooseAuth = require('mongoose-auth')
+
+Schema = mongoose.Schema
+UserSchema = new Schema {}
+UserSchema.plugin mongooseAuth, {
+  everymodule: {
+    everyauth: {
+      User: -> User
+    }
+  }
+  facebook: true
+  password: {
+    everyauth: {
+        getLoginPath: '/login'
+        postLoginPath: '/login'
+        loginView: 'login.jade'
+        getRegisterPath: '/register'
+        postRegisterPath: '/register'
+        registerView: 'register.jade'
+        loginSuccessRedirect: '/'
+        registerSuccessRedirect: '/'
+    }
+  }
+  handleLogout: (req, res)->
+    req.logout()
+    res.json {'message': 'User logged out.'}
+}
+
+mongoose.model 'User', UserSchema
 mongoose.connect('mongodb://swyp:mongo4swyp2012@ds031587.mongolab.com:31587/heroku_app3235025')
 
+User = mongoose.model 'User'
+
 swypApp = require('zappa').app -> 
-  @use 'static'
+  @use 'bodyParser', 'static', 'cookieParser', session: {secret: 'gesturalsensation'}
+  @use mongooseAuth.middleware()
   @enable 'default layout' # this is hella convenient
 
   @io.set("transports", ["xhr-polling"]); 
@@ -135,8 +167,6 @@ swypApp = require('zappa').app ->
       FB.getLoginStatus handleFBStatus
       FB.Event.subscribe 'auth.authResponseChange', handleFBStatus
 
-      return true
-
     
     ((d)->
       js  = id = 'facebook-jssdk'
@@ -175,5 +205,6 @@ swypApp = require('zappa').app ->
     @connect()
 
 port = if process.env.PORT > 0 then process.env.PORT else 3000
+mongooseAuth.helpExpress swypApp.app
 swypApp.app.listen port
 console.log "starting on port # #{port}"
