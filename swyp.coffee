@@ -48,8 +48,8 @@ UserSchema.plugin mongooseAuth, {
   facebook: true
   password: {
     everyauth: {
-        getLoginPath: '/login'
-        postLoginPath: '/login'
+        getLoginPath: '/token'
+        postLoginPath: '/token'
         loginView: 'login.jade'
         getRegisterPath: '/register'
         postRegisterPath: '/register'
@@ -96,7 +96,7 @@ swypApp = require('zappa').app ->
           @render signup: {user_name: userName}
         else 
           console.log "signup success for", userName
-          @redirect '/login'
+          @redirect '/token'
     else  
       @render signup: {user_name: userName}
 
@@ -114,7 +114,7 @@ swypApp = require('zappa').app ->
       input id: 'user_pass', type: 'text', name: 'user_pass', placeholder: 'login pass', size: 50
       button 'signup' 
 
-  @post '/login', (req, res) -> 
+  @post '/token', (req, res) -> 
     console.log req.body
     reqName	 = req.body.user_name
     reqPassword = req.body.user_pass
@@ -152,7 +152,7 @@ swypApp = require('zappa').app ->
             console.log previousSession
             @render login: {userID: matchingUser.userID, token: previousSession.token}
 
-  @get '/login': ->
+  @get '/token': ->
     @render login: {}
 
   @view login: ->
@@ -164,10 +164,10 @@ swypApp = require('zappa').app ->
       console.log "tokening"
       p "{\"userID\" : \"#{@userID}\", \"token\" : \"#{@token}\"}"
     else 
-      form method: 'post', action: '/login', ->
+      form method: 'post', action: '/token', ->
         input id: 'user_name', type: 'text', name: 'user_name', placeholder: 'login user', size: 50
         input id: 'user_pass', type: 'text', name: 'user_pass', placeholder: 'login pass', size: 50
-        button 'login' 
+        button 'get token'
   
   @get '/': -> 
     @render index: {foo: 'bar'}
