@@ -1,8 +1,44 @@
 mongoose     = require('mongoose')
 mongooseAuth = require('mongoose-auth')
-
 Schema = mongoose.Schema
-UserSchema = new Schema {}
+
+AccountSchema = new Schema {
+	userImageURL : String,
+	userID : { type: String, index: { unique: true }}, 
+	userName : { type: String, index: { unique: true }},
+	userPass : String
+	sessions : [Schema.ObjectId]
+	};
+
+SessionSchema = new Schema {
+	token : String, 
+	socketID : String,
+	expiration : Date,
+	owner : {
+		type: Schema.ObjectId,
+		ref: 'Account'
+		},
+	location : {longitude : Number, latitude: Number}
+	};
+
+#//having issues saving this in signup-- I'm gonna try to work around it 
+###
+didFailSave { [MongoError: E11000 duplicate key error index: heroku_app3235025.users.$login_1  dup key: { : null }]
+  name: 'MongoError',
+    err: 'E11000 duplicate key error index: heroku_app3235025.users.$login_1  dup key: { : null }',
+      code: 11000,
+        n: 0,
+	  connectionId: 34013,
+	    ok: 1 }
+###
+
+UserSchema = new mongoose.Schema {
+	userImageURL : String,
+	userID : String, 
+	userName : String,
+	userPass : String,
+	validTokens : []
+	};
 UserSchema.plugin mongooseAuth, {
   everymodule: {
     everyauth: {
@@ -27,10 +63,10 @@ UserSchema.plugin mongooseAuth, {
     res.json {'message': 'User logged out.'}
 }
 
-mongoose.model 'User', UserSchema
+User = mongoose.model 'User', UserSchema
+Account = mongoose.model 'Account', AccountSchema
+Session = mongoose.model 'Session', SessionSchema 
 mongoose.connect('mongodb://swyp:mongo4swyp2012@ds031587.mongolab.com:31587/heroku_app3235025')
-
-User = mongoose.model 'User'
 
 swypApp = require('zappa').app -> 
   @use 'bodyParser', 'static', 'cookieParser', session: {secret: 'gesturalsensation'}
@@ -46,7 +82,93 @@ swypApp = require('zappa').app ->
       return {id: "userfromtoken#{token}"} #user lookup
     else return false; 
 
+  @post '/signup', (req, res) -> 
+    userName	 = req.body.user_name
+    userPassword = req.body.user_pass
+    if userName != "" and userPassword != ""
+      newAccount = new Account()
+      newAccount.set {userPass: userPassword}
+      newAccount.set {userName: userName, userID: userName}
+      newAccount.save (error) =>
+        if error != null
+          console.log "didFailSave", error
+          console.log newAccount
+          @render signup: {user_name: userName}
+        else 
+          console.log "signup success for", userName
+          @redirect '/login'
+    else  
+      @render signup: {user_name: userName}
 
+
+  @get '/signup': ->
+    @render signup: {}
+  
+  @view signup: ->
+    @title = 'signup'
+    @stylesheets = ['/style']
+    @scripts = ['/zappa/jquery','/zappa/zappa']
+                                
+    form method: 'post', action: '/signup', ->
+      input id: 'user_name', type: 'text', name: 'user_name', placeholder: 'login user', size: 50
+      input id: 'user_pass', type: 'text', name: 'user_pass', placeholder: 'login pass', size: 50
+      button 'signup' 
+
+  @post '/login', (req, res) -> 
+    console.log req.body
+    reqName	 = req.body.user_name
+    reqPassword = req.body.user_pass
+    Account.find {userName: reqName}, (err, docs)  =>
+      matchingUser = docs[0]
+      #console.log 'docs',docs, 'with first', matchingUser
+      if matchingUser == null || matchingUser == undefined
+        console.log "login failed for #{reqName}"
+        @render login: {}
+        return
+
+      if matchingUser.userPass != reqPassword
+        console.log "login pass failed for #{matchingUser.userName}"
+        matchingUser == null
+        @render login: {}
+        return
+       
+      if matchingUser != null
+        if matchingUser.sessions.length == 0
+          newToken = "TOKENBLAH_#{matchingUser.userName}" 
+          console.log "Newtoken created #{newToken}"
+          session = new Session {token: newToken, socketID: @id, owner: matchingUser}
+          session.save (error) =>
+            if error != null
+              console.log "didFailSave", error
+              console.log session 
+              @render login: {}
+            else 
+              matchingUser.sessions.push session
+              matchingUser.save()
+              console.log "create new session success for", matchingUser.userName 
+              @render login: {userID: matchingUser.userID, token: session.token}
+        else
+          Session.findById matchingUser.sessions[0], (error, previousSession) =>
+            console.log previousSession
+            @render login: {userID: matchingUser.userID, token: previousSession.token}
+
+  @get '/login': ->
+    @render login: {}
+
+  @view login: ->
+    @title = 'login'
+    @stylesheets = ['/style']
+    @scripts = ['/zappa/jquery','/zappa/zappa']
+
+    if @token != undefined && @userID != undefined
+      console.log "tokening"
+      p "{\"userID\" : \"#{@userID}\", \"token\" : \"#{@token}\"}"
+    else 
+      form method: 'post', action: '/login', ->
+        input id: 'user_name', type: 'text', name: 'user_name', placeholder: 'login user', size: 50
+        input id: 'user_pass', type: 'text', name: 'user_pass', placeholder: 'login pass', size: 50
+        button 'login' 
+  
   @get '/': -> 
     @render index: {foo: 'bar'}
 
@@ -56,7 +178,7 @@ swypApp = require('zappa').app ->
     @scripts = ['/socket.io/socket.io', 
                 '/zappa/jquery',
                 '/zappa/zappa',
-                '/index']
+                '/swyp']
 
     if process.env.NODE_ENV is 'production'
       coffeescript ->
@@ -179,7 +301,7 @@ swypApp = require('zappa').app ->
       ref.parentNode.insertBefore js, ref
     )(document)
 
-  @client '/index.js': ->
+  @client '/swyp.js': ->
     $('document').ready ->
       $('#logout').click (e)->
         e.preventDefault()
