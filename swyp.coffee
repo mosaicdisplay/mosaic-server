@@ -3,23 +3,23 @@ mongooseAuth = require('mongoose-auth')
 Schema = mongoose.Schema
 
 AccountSchema = new Schema {
-	userImageURL : String,
-	userID : { type: String, index: { unique: true }}, 
-	userName : { type: String, index: { unique: true }},
-	userPass : String
-	sessions : [Schema.ObjectId]
-	};
+  userImageURL : String,
+  userID : { type: String, index: { unique: true }}, 
+  userName : { type: String, index: { unique: true }},
+  userPass : String
+  sessions : [Schema.ObjectId]
+}
 
 SessionSchema = new Schema {
-	token : String, 
-	socketID : String,
-	expiration : Date,
-	owner : {
-		type: Schema.ObjectId,
-		ref: 'Account'
-		},
-	location : {longitude : Number, latitude: Number}
-	};
+  token : String, 
+  socketID : String,
+  expiration : Date,
+  owner : {
+    type: Schema.ObjectId,
+    ref: 'Account'
+    },
+  location : {longitude : Number, latitude: Number}
+}
 
 #//having issues saving this in signup-- I'm gonna try to work around it 
 ###
@@ -28,17 +28,12 @@ didFailSave { [MongoError: E11000 duplicate key error index: heroku_app3235025.u
     err: 'E11000 duplicate key error index: heroku_app3235025.users.$login_1  dup key: { : null }',
       code: 11000,
         n: 0,
-	  connectionId: 34013,
-	    ok: 1 }
+    connectionId: 34013,
+      ok: 1 }
 ###
 
-UserSchema = new mongoose.Schema {
-	userImageURL : String,
-	userID : String, 
-	userName : String,
-	userPass : String,
-	validTokens : []
-	};
+UserSchema = new Schema {}
+
 UserSchema.plugin mongooseAuth, {
   everymodule: {
     everyauth: {
@@ -47,13 +42,14 @@ UserSchema.plugin mongooseAuth, {
   }
   facebook: true
   password: {
+    loginWith: 'email'
     everyauth: {
-        getLoginPath: '/token'
-        postLoginPath: '/token'
-        loginView: 'login.jade'
+        getLoginPath: '/login'
+        postLoginPath: '/login'
+        loginView: 'login.coffee'
         getRegisterPath: '/register'
         postRegisterPath: '/register'
-        registerView: 'register.jade'
+        registerView: 'register.coffee'
         loginSuccessRedirect: '/'
         registerSuccessRedirect: '/'
     }
@@ -70,7 +66,7 @@ mongoose.connect('mongodb://swyp:mongo4swyp2012@ds031587.mongolab.com:31587/hero
 
 swypApp = require('zappa').app -> 
   @use 'bodyParser', 'static', 'cookieParser', session: {secret: 'gesturalsensation'}
-  @use mongooseAuth.middleware()
+  @app.use mongooseAuth.middleware()
   @enable 'default layout' # this is hella convenient
 
   @io.set("transports", ["xhr-polling"]); 
@@ -83,7 +79,7 @@ swypApp = require('zappa').app ->
     else return false; 
 
   @post '/signup', (req, res) -> 
-    userName	 = req.body.user_name
+    userName   = req.body.user_name
     userPassword = req.body.user_pass
     if userName != "" and userPassword != ""
       newAccount = new Account()
@@ -116,7 +112,7 @@ swypApp = require('zappa').app ->
 
   @post '/token', (req, res) -> 
     console.log req.body
-    reqName	 = req.body.user_name
+    reqName  = req.body.user_name
     reqPassword = req.body.user_pass
     Account.find {userName: reqName}, (err, docs)  =>
       matchingUser = docs[0]
