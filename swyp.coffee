@@ -1,6 +1,7 @@
 mongoose     = require('mongoose')
 mongooseAuth = require('mongoose-auth')
 Schema = mongoose.Schema
+ObjectId = mongoose.SchemaTypes.ObjectId
 
 AccountSchema = new Schema {
   userImageURL : String,
