@@ -16,6 +16,26 @@ AccountSchema = new Schema {
   }]
 }
 
+###
+Swyp Schema -- Determine whether embedded in session, or seperate
+• Swyps created on swypOut event
+• Swyps store track:
+  - fileTypes [array of hashtables]
+    - URL location
+    - Requesting userIDs
+  - swyp-out ownerID
+  - expiration date
+  - previewImage
+###
+
+###
+Swyp functions
+
+"relevant to location" method for determining users to update
+"relevant to session" method of sending list of users
+"user, session, socketID by userID" method for getting communication method for userID
+###
+
 UserSchema = new Schema {}
 
 UserSchema.plugin mongooseAuth, {
@@ -221,7 +241,7 @@ swypApp = require('zappa').app ->
         {id: contentID, \
         time: swypTime}
       #will limit to nearby users later
-      @broadcast swypInAvailable: 
+      @broadcast swypInAvailable:
          {id: contentID, \
          fileTypes: supportedTypes,\
          preview: previewImage,\
@@ -234,12 +254,12 @@ swypApp = require('zappa').app ->
         @emit unauthorized: {}
         return
       contentID   = @data.id
-      contentType = @data.type 
+      contentType = @data.type
       uploadURL   = "http://newUploadURL"
-      @emit dataPending: 
+      @emit dataPending:
         {id: contentID, \
          type: contentType}
-      @broadcast dataRequest: 
+      @broadcast dataRequest:
         {id: contentID, \
          type: contentType,
          uploadURL: uploadURL}
@@ -250,10 +270,10 @@ swypApp = require('zappa').app ->
         @emit unauthorized: {}
         return
       contentID   = @data.id
-      contentType = @data.type 
+      contentType = @data.type
       uploadURL   = "http://dbRetrievedUploadURL"
       console.log @io.sockets
-      @broadcast dataAvailable: 
+      @broadcast dataAvailable:
          {id: contentID, \
          type: contentType,\
          uploadURL: uploadURL}
