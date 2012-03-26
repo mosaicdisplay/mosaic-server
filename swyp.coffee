@@ -12,7 +12,7 @@ AccountSchema = new Schema {
     token : String,
     socketID : String,
     expiration : Date,
-    location : {longitude : Number, latitude: Number}
+    location : [ Number, Number] #long,lat as suggested: http://www.mongodb.org/display/DOCS/Geospatial+Indexing 
   }]
 }
 
@@ -90,6 +90,7 @@ swypApp = require('zappa').app ->
 
   accountsAndSessionsNearLocation = (location, callback) -> #callback([{sessions:[Session], account: Account}])
     #for now we just return all active sessions for accounts with any nearby session
+    
 
   relevantAccountsAndSessionsForSession = (session, callback) -> #callback([{sessions:[Session], account: Account}])
 
@@ -220,10 +221,16 @@ swypApp = require('zappa').app ->
         return
       session.socketID = @id
       location  = @data.location
-      @emit updateGood: ->
-      @broadcast nearbyRefresh: \
-        {preferred: [user],\
-         otherNearby: "null"}
+      session.location = location
+      user.save (error) =>
+        if error?
+          console.log "error saving user after StatusUpdate #{ error }"
+          @emit serverError: ->
+        else
+          @emit updateGood: ->
+          @broadcast nearbyRefresh: \
+            {preferred: [user],\
+             otherNearby: "null"}
 
   @on swypOut: ->
     tokenValidate @data.token, (user, session) =>
@@ -330,7 +337,7 @@ swypApp = require('zappa').app ->
         makeStatusUpdate()
 
     makeStatusUpdate = =>
-      @emit statusUpdate: {token: $("#token_input").val(), locaation: {longitude: "1.000", latitude: "1.000"}}
+      @emit statusUpdate: {token: $("#token_input").val(), location: [44.680997,10.317557]}
  
     @on swypInAvailable: ->
       console.log "swyp in available"
