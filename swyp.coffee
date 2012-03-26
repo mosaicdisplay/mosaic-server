@@ -229,33 +229,35 @@ swypApp = require('zappa').app ->
          time: swypTime}
     
   @on swypIn: ->
-    if (user = tokenEval(@data.token)) == false
-      @emit unauthorized: ->
-      return
-    contentID   = @data.id
-    contentType = @data.type 
-    uploadURL   = "http://newUploadURL"
-    @emit dataPending: 
-      {id: contentID, \
-       type: contentType}
-    @broadcast dataRequest: 
-      {id: contentID, \
-       type: contentType,
-       uploadURL: uploadURL}
+    tokenValidate @data.token, (user, session) =>
+      if user == null
+        @emit unauthorized: {}
+        return
+      contentID   = @data.id
+      contentType = @data.type 
+      uploadURL   = "http://newUploadURL"
+      @emit dataPending: 
+        {id: contentID, \
+         type: contentType}
+      @broadcast dataRequest: 
+        {id: contentID, \
+         type: contentType,
+         uploadURL: uploadURL}
      
   @on uploadCompleted: ->
-    if (user = tokenEval(@data.token)) == false
-      @emit unauthorized: ->
-      return
-    contentID   = @data.id
-    contentType = @data.type 
-    uploadURL   = "http://dbRetrievedUploadURL"
-    console.log @io.sockets
-    @broadcast dataAvailable: 
-       {id: contentID, \
-       type: contentType,\
-       uploadURL: uploadURL}
-    #io.sockets.sockets[sid].json.send -> #send to particularly waiting clients
+    tokenValidate @data.token, (user, session) =>
+      if user == null
+        @emit unauthorized: {}
+        return
+      contentID   = @data.id
+      contentType = @data.type 
+      uploadURL   = "http://dbRetrievedUploadURL"
+      console.log @io.sockets
+      @broadcast dataAvailable: 
+         {id: contentID, \
+         type: contentType,\
+         uploadURL: uploadURL}
+      #io.sockets.sockets[sid].json.send -> #send to particularly waiting clients
 
   @coffee '/facebook.js': ->
     handleFBStatus = (res)->
