@@ -205,28 +205,29 @@ swypApp = require('zappa').app ->
          otherNearby: "null"}
 
   @on swypOut: ->
-    if (user = tokenEval(@data.token)) == false
-      @emit unauthorized: ->
-      return
-    #implement function to evaluate user token and abort if invalid
-    contentID      = "newSwypID"
-    supportedTypes = @data.fileTypes
-    previewImage   = @data.previewImage
-    recipientTo    = @data.to
-    fromSender     = user
-    swypTime       = new Date()
-    console.log "swyp out created supports types #{supportedTypes}"
-    @emit swypOutPending:
-      {id: contentID, \
-      time: swypTime}
-    #will limit to nearby users later
-    @broadcast swypInAvailable: 
-       {id: contentID, \
-       fileTypes: supportedTypes,\
-       preview: previewImage,\
-       from: fromSender, \
-       time: swypTime}
-  
+    tokenValidate @data.token, (user, session) =>
+      if user == null
+        @emit unauthorized: {}
+        return
+      #implement function to evaluate user token and abort if invalid
+      contentID      = "newSwypID"
+      supportedTypes = @data.fileTypes
+      previewImage   = @data.previewImage
+      recipientTo    = @data.to
+      fromSender     = user
+      swypTime       = new Date()
+      console.log "swyp out created supports types #{supportedTypes}"
+      @emit swypOutPending:
+        {id: contentID, \
+        time: swypTime}
+      #will limit to nearby users later
+      @broadcast swypInAvailable: 
+         {id: contentID, \
+         fileTypes: supportedTypes,\
+         preview: previewImage,\
+         from: fromSender, \
+         time: swypTime}
+    
   @on swypIn: ->
     if (user = tokenEval(@data.token)) == false
       @emit unauthorized: ->
@@ -303,9 +304,9 @@ swypApp = require('zappa').app ->
         @emit swypOut: {token: $("#token_input").val(), previewImage: "NONE!", fileTypes: ["image/png", "image/jpeg"]}
  
       $("#statusupdate_button").click ->
-        statusUpdate()
+        makeStatusUpdate()
 
-     statusUpdate = =>
+    makeStatusUpdate = =>
       @emit statusUpdate: {token: $("#token_input").val(), locaation: {longitude: "1.000", latitude: "1.000"}}
  
     @on swypInAvailable: ->
@@ -326,7 +327,7 @@ swypApp = require('zappa').app ->
 
     @on updateRequest: ->
       $('body').append "<br />update requested!"
-      statusUpdate()
+      makeStatusUpdate()
      
     @connect()
 
