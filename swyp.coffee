@@ -55,7 +55,6 @@ swypApp = require('zappa').app ->
   @io.set("transports", ["xhr-polling"])
   @io.set("polling duration", 10)
  
- 
 #this is the new asynchronous method-- for now there's only one hardcoded token in @client code
   tokenValidate = (token, callback) ->
     userFound = null
@@ -158,10 +157,10 @@ swypApp = require('zappa').app ->
         button 'get token'
   
   @get '/': ->
-    @render index: {foo: 'bar'}
+    @render index: {}
 
   @view index: ->
-    @title = 'Inline template'
+    @title = 'Swyp Web Client'
     @stylesheets = ['/style']
     @scripts = ['/socket.io/socket.io',
                 '/zappa/jquery',
@@ -178,9 +177,10 @@ swypApp = require('zappa').app ->
     script src: '/facebook.js'
                 
     h1 @title
-    p @foo
-    form ->
-      button 'swypOut'
+    input id: 'token_input', type: 'text', name: 'token_input', placeholder: 'session token', size: 50, value: 'TOKENBLAH_alex'
+    input id: 'statusupdate_button', type: 'button', value: "status update!"
+   
+    input id: 'swypOut_button', type: 'button', value: "swyp out!"
 
     div '#fb-root', ->
       a '#logout.hidden', href: "#", ->
@@ -298,13 +298,16 @@ swypApp = require('zappa').app ->
         e.preventDefault()
         FB.logout (res)->
           console.log res
-
     $ =>
-      $('button').click (e) =>
-        @emit swypOut: {token: "theToken", previewImage: "NONE!", fileTypes: ["image/png", "image/jpeg"]}
-        $('#box').val('').focus()
-        e.preventDefault()
-    
+      $('#swypOut_button').click (e) =>
+        @emit swypOut: {token: $("#token_input").val(), previewImage: "NONE!", fileTypes: ["image/png", "image/jpeg"]}
+ 
+      $("#statusupdate_button").click ->
+        statusUpdate()
+
+     statusUpdate = =>
+      @emit statusUpdate: {token: $("#token_input").val(), locaation: {longitude: "1.000", latitude: "1.000"}}
+ 
     @on swypInAvailable: ->
       console.log "swyp in available"
       $('body').append "<br /> @ #{@data.time} swypIn avail w.ID #{@data.id} from #{@data.from.id} with types: #{@data.fileTypes}"
@@ -323,8 +326,8 @@ swypApp = require('zappa').app ->
 
     @on updateRequest: ->
       $('body').append "<br />update requested!"
-      @emit statusUpdate: {token: "TOKENBLAH_alex", locaation: {longitude: "1.000", latitude: "1.000"}}
-    
+      statusUpdate()
+     
     @connect()
 
 port = if process.env.PORT > 0 then process.env.PORT else 3000
