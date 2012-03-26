@@ -32,7 +32,7 @@ Swyp Schema -- Determine whether embedded in session, or seperate
 Swyp functions
 
 "relevant to location" method for determining users to update
-"relevant to session" method of sending list of users
+"relevant to session" method for getting nearby users
 "user, session, socketID by userID" method for getting communication method for userID
 ###
 
@@ -87,12 +87,13 @@ swypApp = require('zappa').app ->
             session = obj
       callback userFound, session
       console.log "found user #{userFound} for session #{session} andtoken #{token}"
-  
-#this is the old depreicated method that doesn't rely on DBs, at all
-  tokenEval = (token) ->
-    if token != ""
-      return {id: "userfromtoken#{token}"} #user lookup
-    else return false
+
+  accountsAndSessionsNearLocation = (location, callback) -> #callback([{sessions:[Session], account: Account}])
+    #for now we just return all active sessions for accounts with any nearby session
+
+  relevantAccountsAndSessionsForSession = (session, callback) -> #callback([{sessions:[Session], account: Account}])
+
+  activeSessionsForAccount = (account, callback) -> #callback([Session])
 
   @post '/signup', (req, res) ->
     userName   = req.body.user_name
