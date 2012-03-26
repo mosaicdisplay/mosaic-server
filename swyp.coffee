@@ -54,7 +54,9 @@ swypApp = require('zappa').app ->
 
   @io.set("transports", ["xhr-polling"])
   @io.set("polling duration", 10)
-  
+ 
+ 
+#this is the new asynchronous method-- for now there's only one hardcoded token in @client code
   tokenValidate = (token, callback) ->
     userFound = null
     session = null
@@ -67,6 +69,7 @@ swypApp = require('zappa').app ->
       callback userFound, session
       console.log "found user #{userFound} for session #{session} andtoken #{token}"
   
+#this is the old depreicated method that doesn't rely on DBs, at all
   tokenEval = (token) ->
     if token != ""
       return {id: "userfromtoken#{token}"} #user lookup
