@@ -5,33 +5,16 @@ ObjectId = mongoose.SchemaTypes.ObjectId
 
 AccountSchema = new Schema {
   userImageURL : String,
-  userID : { type: String, index: { unique: true }}, 
+  userID : { type: String, index: { unique: true }},
   userName : { type: String, index: { unique: true }},
   userPass : String
-  sessions : [Schema.ObjectId]
+  sessions : [{
+    token : String,
+    socketID : String,
+    expiration : Date,
+    location : {longitude : Number, latitude: Number}
+  }]
 }
-
-SessionSchema = new Schema {
-  token : String, 
-  socketID : String,
-  expiration : Date,
-  owner : {
-    type: Schema.ObjectId,
-    ref: 'Account'
-    },
-  location : {longitude : Number, latitude: Number}
-}
-
-#//having issues saving this in signup-- I'm gonna try to work around it 
-###
-didFailSave { [MongoError: E11000 duplicate key error index: heroku_app3235025.users.$login_1  dup key: { : null }]
-  name: 'MongoError',
-    err: 'E11000 duplicate key error index: heroku_app3235025.users.$login_1  dup key: { : null }',
-      code: 11000,
-        n: 0,
-    connectionId: 34013,
-      ok: 1 }
-###
 
 UserSchema = new Schema {}
 
@@ -62,24 +45,23 @@ UserSchema.plugin mongooseAuth, {
 
 User = mongoose.model 'User', UserSchema
 Account = mongoose.model 'Account', AccountSchema
-Session = mongoose.model 'Session', SessionSchema 
 mongoose.connect('mongodb://swyp:mongo4swyp2012@ds031587.mongolab.com:31587/heroku_app3235025')
 
-swypApp = require('zappa').app -> 
+swypApp = require('zappa').app ->
   @use 'bodyParser', 'static', 'cookieParser', session: {secret: 'gesturalsensation'}
   @app.use mongooseAuth.middleware()
   @enable 'default layout' # this is hella convenient
 
-  @io.set("transports", ["xhr-polling"]); 
-  @io.set("polling duration", 10); 
+  @io.set("transports", ["xhr-polling"])
+  @io.set("polling duration", 10)
 
-  tokenEval = (token) -> 
+  tokenEval = (token) ->
     if token != ""
-      console.log "found user for token #{token}" 
+      console.log "found user for token #{token}"
       return {id: "userfromtoken#{token}"} #user lookup
-    else return false; 
+    else return false
 
-  @post '/signup', (req, res) -> 
+  @post '/signup', (req, res) ->
     userName   = req.body.user_name
     userPassword = req.body.user_pass
     if userName != "" and userPassword != ""
@@ -91,10 +73,10 @@ swypApp = require('zappa').app ->
           console.log "didFailSave", error
           console.log newAccount
           @render signup: {user_name: userName}
-        else 
+        else
           console.log "signup success for", userName
           @redirect '/token'
-    else  
+    else
       @render signup: {user_name: userName}
 
 
@@ -109,9 +91,9 @@ swypApp = require('zappa').app ->
     form method: 'post', action: '/signup', ->
       input id: 'user_name', type: 'text', name: 'user_name', placeholder: 'login user', size: 50
       input id: 'user_pass', type: 'text', name: 'user_pass', placeholder: 'login pass', size: 50
-      button 'signup' 
+      button 'signup'
 
-  @post '/token', (req, res) -> 
+  @post '/token', (req, res) ->
     console.log req.body
     reqName  = req.body.user_name
     reqPassword = req.body.user_pass
@@ -131,23 +113,19 @@ swypApp = require('zappa').app ->
        
       if matchingUser != null
         if matchingUser.sessions.length == 0
-          newToken = "TOKENBLAH_#{matchingUser.userName}" 
+          newToken = "TOKENBLAH_#{matchingUser.userName}"
           console.log "Newtoken created #{newToken}"
-          session = new Session {token: newToken, socketID: @id, owner: matchingUser}
-          session.save (error) =>
+          session = {token: newToken, socketID: @id}
+          matchingUser.sessions.push session
+          matchingUser.save (error) =>
             if error != null
               console.log "didFailSave", error
-              console.log session 
-              @render login: {}
-            else 
-              matchingUser.sessions.push session
-              matchingUser.save()
-              console.log "create new session success for", matchingUser.userName 
-              @render login: {userID: matchingUser.userID, token: session.token}
+          console.log "create new session success for", matchingUser.userName
+          @render login: {userID: matchingUser.userID, token: session.token}
         else
-          Session.findById matchingUser.sessions[0], (error, previousSession) =>
-            console.log previousSession
-            @render login: {userID: matchingUser.userID, token: previousSession.token}
+          previousSession = matchingUser.sessions[0]
+          console.log previousSession
+          @render login: {userID: matchingUser.userID, token: previousSession.token}
 
   @get '/token': ->
     @render login: {}
@@ -158,21 +136,20 @@ swypApp = require('zappa').app ->
     @scripts = ['/zappa/jquery','/zappa/zappa']
 
     if @token != undefined && @userID != undefined
-      console.log "tokening"
       p "{\"userID\" : \"#{@userID}\", \"token\" : \"#{@token}\"}"
-    else 
+    else
       form method: 'post', action: '/token', ->
         input id: 'user_name', type: 'text', name: 'user_name', placeholder: 'login user', size: 50
         input id: 'user_pass', type: 'text', name: 'user_pass', placeholder: 'login pass', size: 50
         button 'get token'
   
-  @get '/': -> 
+  @get '/': ->
     @render index: {foo: 'bar'}
 
   @view index: ->
     @title = 'Inline template'
     @stylesheets = ['/style']
-    @scripts = ['/socket.io/socket.io', 
+    @scripts = ['/socket.io/socket.io',
                 '/zappa/jquery',
                 '/zappa/zappa',
                 '/swyp']
