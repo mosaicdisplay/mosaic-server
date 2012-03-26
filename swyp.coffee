@@ -54,10 +54,21 @@ swypApp = require('zappa').app ->
 
   @io.set("transports", ["xhr-polling"])
   @io.set("polling duration", 10)
-
+  
+  tokenValidate = (token, callback) ->
+    userFound = null
+    session = null
+    Account.find {"sessions.token" : token}, (err, docs)  =>
+      userFound = docs[0] ? null
+      if userFound != null
+        userFound.sessions.forEach (obj, i) ->
+          if obj.token == token
+            session = obj
+      callback userFound, session
+      console.log "found user #{userFound} for session #{session} andtoken #{token}"
+  
   tokenEval = (token) ->
     if token != ""
-      console.log "found user for token #{token}"
       return {id: "userfromtoken#{token}"} #user lookup
     else return false
 
@@ -175,17 +186,20 @@ swypApp = require('zappa').app ->
         'Login with Facebook'
 
   @on connection: ->
-    @emit welcome:  {time: new Date()}
+    @emit updateRequest: {time: new Date()}
   
   @on statusUpdate: ->
-    if (user = tokenEval(@data.token)) == false
-      @emit unauthorized: ->
-      return
-    location  = @data.location
-    @emit updateGood: ->
-    @broadcast nearbyRefresh: \
-      {preferred: [user],\
-       otherNearby: "null"}
+    console.log "statusUpate"
+    tokenValidate @data.token, (user, session) =>
+      if user == null
+        @emit unauthorized: {}
+        return
+      session.socketID = @id
+      location  = @data.location
+      @emit updateGood: ->
+      @broadcast nearbyRefresh: \
+        {preferred: [user],\
+         otherNearby: "null"}
 
   @on swypOut: ->
     if (user = tokenEval(@data.token)) == false
@@ -193,13 +207,13 @@ swypApp = require('zappa').app ->
       return
     #implement function to evaluate user token and abort if invalid
     contentID      = "newSwypID"
-    supportedTypes = @data.fileTypes 
+    supportedTypes = @data.fileTypes
     previewImage   = @data.previewImage
     recipientTo    = @data.to
     fromSender     = user
     swypTime       = new Date()
     console.log "swyp out created supports types #{supportedTypes}"
-    @emit swypOutPending: 
+    @emit swypOutPending:
       {id: contentID, \
       time: swypTime}
     #will limit to nearby users later
@@ -297,6 +311,16 @@ swypApp = require('zappa').app ->
 
     @on welcome: ->
       $('body').append "Hey Ethan, socket.io says the time!: #{@data.time}"
+    
+    @on unauthorized: ->
+      $('body').append "<br />yo token is unauthorized, fo!!"
+    
+    @on updateGood: ->
+      $('body').append "<br />you updated successfully!"
+
+    @on updateRequest: ->
+      $('body').append "<br />update requested!"
+      @emit statusUpdate: {token: "TOKENBLAH_alex", locaation: {longitude: "1.000", latitude: "1.000"}}
     
     @connect()
 
