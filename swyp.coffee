@@ -243,16 +243,15 @@ swypApp = require('zappa').app ->
           console.log "error saving user after StatusUpdate #{ error }"
           @emit serverError: ->
         else
-          @emit updateGood: ->
+          @emit updateGood: {}
           accountsAndSessionsNearLocation location, (sessionsByAccount) =>
             for extAccount in sessionsByAccount
               for extSession in extAccount[1]
-                if extSession != session
-                  #this next part has got me stuck
-                  #how do we update the nearby folks properly if this doesn't work? Check the logs, it emits, but it's never received as a packet.
-                  console.log "External session to update #{extSession.socketID} w. socket #{@io.sockets.sockets[extSession.socketID]}"
-                  @io.sockets.sockets[extSession.socketID].emit nearbyRefresh: {} if @io.sockets.sockets[extSession.socketID]?
-
+                console.log "extSession #{extSession.socketID} vs this session #{session.socketID}"
+                if extSession.socketID != session.socketID #this means the sessions represent unique clients
+                  if @io.sockets.sockets[extSession.socketID]?
+                    console.log "user #{extAccount[0].userName} w./ External session to update #{extSession.socketID} w. socket #{@io.sockets.sockets[extSession.socketID]}"
+                    @io.sockets.sockets[extSession.socketID].emit('nearbyRefresh', {})
   @on swypOut: ->
     tokenValidate @data.token, (user, session) =>
       if user == null
