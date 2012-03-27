@@ -3,17 +3,21 @@ mongooseAuth = require('mongoose-auth')
 Schema = mongoose.Schema
 ObjectId = mongoose.SchemaTypes.ObjectId
 
+#embedded schema as suggested http://mongoosejs.com/docs/embedded-documents.html
+#   embedded seems to be the only way this works-- I had tried just literally embedding the properties (that didn't)
+Session = new Schema {
+  token : String,
+  socketID : String,
+  expiration : Date,
+  location : [ Number, Number] #long,lat as suggested: http://www.mongodb.org/display/DOCS/Geospatial+Indexing 
+}
+
 AccountSchema = new Schema {
   userImageURL : String,
   userID : { type: String, index: { unique: true }},
   userName : { type: String, index: { unique: true }},
   userPass : String
-  sessions : [{
-    token : String,
-    socketID : String,
-    expiration : Date,
-    location : [ Number, Number] #long,lat as suggested: http://www.mongodb.org/display/DOCS/Geospatial+Indexing 
-  }]
+  sessions : [Session]
 }
 
 ###
@@ -82,11 +86,30 @@ swypApp = require('zappa').app ->
 
   accountsAndSessionsNearLocation = (location, callback) -> #callback([{sessions:[Session], account: Account}])
     #for now we just return all active sessions for accounts with any nearby session
-    
+    sessionsByAccount = []
+    Account.find { "sessions.location" : { $nearSphere : [44.680997,10.317557], $maxDistance : 1/6378 } }, (err, docs) =>
+      if err?
+        console.log "error on session location lookup #{err}"
+        return
+      if docs?
+        docs.forEach (obj, i) =>
+          activeSessionsForAccount obj, (sessionsForAccount) =>
+            if sessionsForAccount? &&  sessionsForAccount.length > 0
+              console.log "active session docs #{sessionsForAccount}"
+              sessionsByAccount.push([ obj, sessionsForAccount])
+      
+      callback(sessionsByAccount)
 
   relevantAccountsAndSessionsForSession = (session, callback) -> #callback([{sessions:[Session], account: Account}])
+    
 
-  activeSessionsForAccount = (account, callback) -> #callback([Session])
+  activeSessionsForAccount = (account, callback) => #callback([Session])
+    activeSessions = []
+    if account.sessions?
+      account.sessions.forEach (obj, i) =>
+        if (obj.expiration > new Date() || (obj.expiration?) == false) && @io.sockets.socket(obj.socketID)?
+          activeSessions.push(obj)
+    callback(activeSessions)
 
   @post '/signup', (req, res) ->
     userName   = req.body.user_name
@@ -214,16 +237,21 @@ swypApp = require('zappa').app ->
       session.socketID = @id
       location  = @data.location
       session.location = location
-      console.log session.valueOf()
+      #console.log session.valueOf()
       user.save (error) => #[{"location":[44.680997,10.317557],"socketID":"1998803106463826141","token":"TOKENBLAH_alex"}]
         if error?
           console.log "error saving user after StatusUpdate #{ error }"
           @emit serverError: ->
         else
           @emit updateGood: ->
-          @broadcast nearbyRefresh: \
-            {preferred: [user],\
-             otherNearby: "null"}
+          accountsAndSessionsNearLocation location, (sessionsByAccount) =>
+            for extAccount in sessionsByAccount
+              for extSession in extAccount[1]
+                if extSession != session
+      #            console.log @io.sockets.socket(extSession.socketid)
+                  process.nextTick =>
+                    console.log "External session to update #{extSession.socketID} w. socket #{@io.sockets.socket(extSession.socketID)}"
+                    @io.sockets.socket(extSession.socketid).emit nearbyRefresh: {}
 
   @on swypOut: ->
     tokenValidate @data.token, (user, session) =>
@@ -347,6 +375,9 @@ swypApp = require('zappa').app ->
     
     @on updateGood: ->
       $('body').append "<br />you updated successfully!"
+    
+    @on nearbyRefresh: ->
+      $('body').append "<br />received a nearby session update!"
 
     @on updateRequest: ->
       $('body').append "<br />update requested!"
