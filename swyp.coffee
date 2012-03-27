@@ -28,14 +28,6 @@ Swyp Schema -- Determine whether embedded in session, or seperate
   - previewImage
 ###
 
-###
-Swyp functions
-
-"relevant to location" method for determining users to update
-"relevant to session" method for getting nearby users
-"user, session, socketID by userID" method for getting communication method for userID
-###
-
 UserSchema = new Schema {}
 
 UserSchema.plugin mongooseAuth, {
@@ -222,7 +214,8 @@ swypApp = require('zappa').app ->
       session.socketID = @id
       location  = @data.location
       session.location = location
-      user.save (error) =>
+      console.log session.valueOf()
+      user.save (error) => #[{"location":[44.680997,10.317557],"socketID":"1998803106463826141","token":"TOKENBLAH_alex"}]
         if error?
           console.log "error saving user after StatusUpdate #{ error }"
           @emit serverError: ->
