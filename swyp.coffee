@@ -248,10 +248,10 @@ swypApp = require('zappa').app ->
             for extAccount in sessionsByAccount
               for extSession in extAccount[1]
                 console.log "extSession #{extSession.socketID} vs this session #{session.socketID}"
-                if extSession.socketID != session.socketID #this means the sessions represent unique clients
-                  if @io.sockets.sockets[extSession.socketID]?
-                    console.log "user #{extAccount[0].userName} w./ External session to update #{extSession.socketID} w. socket #{@io.sockets.sockets[extSession.socketID]}"
-                    @io.sockets.sockets[extSession.socketID].emit('nearbyRefresh', {})
+              #  if extSession.socketID != session.socketID #this means the sessions represent unique clients
+                if @io.sockets.sockets[extSession.socketID]?
+                  console.log "user #{extAccount[0].userName} w./ External session to update #{extSession.socketID} w. socket #{@io.sockets.sockets[extSession.socketID]}"
+                  @io.sockets.sockets[extSession.socketID].emit('nearbyRefresh', {})
   @on swypOut: ->
     tokenValidate @data.token, (user, session) =>
       if user == null
