@@ -63,6 +63,8 @@ User = mongoose.model 'User', UserSchema
 Account = mongoose.model 'Account', AccountSchema
 mongoose.connect('mongodb://swyp:mongo4swyp2012@ds031587.mongolab.com:31587/heroku_app3235025')
 
+`Array.prototype.unique = function() {    var o = {}, i, l = this.length, r = [];    for(i=0; i<l;i+=1) o[this[i]] = this[i];    for(i in o) r.push(o[i]);    return r;};`
+
 swypApp = require('zappa').app ->
   @use 'bodyParser', 'static', 'cookieParser', session: {secret: 'gesturalsensation'}
   @app.use mongooseAuth.middleware()
@@ -70,7 +72,7 @@ swypApp = require('zappa').app ->
 
   @io.set("transports", ["xhr-polling"])
   @io.set("polling duration", 10)
- 
+
 #this is the new asynchronous method-- for now there's only one hardcoded token in @client code
   tokenValidate = (token, callback) ->
     userFound = null
@@ -82,12 +84,44 @@ swypApp = require('zappa').app ->
           if obj.token == token
             session = obj
       callback userFound, session
-      console.log "found user #{userFound} for session #{session} andtoken #{token}"
+#      console.log "found user #{userFound} for session #{session} andtoken #{token}"
+
+  recursiveGetAccountsAtLocationArray = (index, locationsArray, uniqueAccounts, callback) => #recursive function #callback(error, uniqueAccounts)
+    maxDistanceRadial = 1/6378 #in radial coord km/radiusEarth *ONLY WORKS ON EARTH*
+    nextAccounts = []
+    nextAccounts = locationsArray if locationsArray?
+    if locationsArray[index]?
+      nextLocation = locationsArray[index]
+      Account.find { "sessions.location" : { $nearSphere : nextLocation, $maxDistance : maxDistanceRadial }}, (err, docs) =>
+        if err?
+          console.log "error on session location lookup #{err}"
+          callback err, null
+          return
+        if docs?
+          nextAccounts = nextAccounts.concat(docs).unique()
+          recursiveGetAccountsAtLocationArray(index + 1, locationsArray, nextAccounts, callback)
+    else
+      callback null, uniqueAccounts
+
+  updateUniqueActiveSessionsNearLocationArray = (locations, callback) => #callback(error)
+    recursiveGetAccountsAtLocationArray 0,locations,[], (error, uniqueAccounts)=>
+      activeSessions = []
+      uniqueAccounts.forEach (obj, i) =>
+        activeSessionsForAccount obj, (sessionsForAccount) =>
+          if sessionsForAccount? &&  sessionsForAccount.length > 0
+            activeSessions = activeSessions.concat(sessionsForAccount)
+      for session in activeSessions
+        relevantAccountsAndSessionsForSession (session), (relevantUpdate) =>
+          socket = socketForSession(session)
+          if socket? && relevantUpdate?
+            console.log "nearbyrefreshing for sessionID #{session.socketID}"
+            socket.emit('nearbyRefresh', relevantUpdate)
 
   accountsAndSessionsNearLocation = (location, callback) -> #callback([{sessions:[Session], account: Account}])
     #for now we just return all active sessions for accounts with any nearby session
     sessionsByAccount = []
-    Account.find { "sessions.location" : { $nearSphere : [44.680997,10.317557], $maxDistance : 1/6378 } }, (err, docs) =>
+    query = null
+    Account.find { "sessions.location" : { $nearSphere : [44.680997,10.317557], $maxDistance : 1/6378  }}, (err, docs) =>
       if err?
         console.log "error on session location lookup #{err}"
         return
@@ -99,10 +133,17 @@ swypApp = require('zappa').app ->
               sessionsByAccount.push([ obj, sessionsForAccount])
       
       callback(sessionsByAccount)
-
+  
   relevantAccountsAndSessionsForSession = (session, callback) -> #callback([{sessions:[Session], account: Account}])
-    
+    callback {name: "alextestrelevant"}
 
+  socketForSession = (session) =>
+    if @io.sockets.sockets[session.socketID]?
+      return @io.sockets.sockets[session.socketID]
+    else
+      console.log "session no socket #{session.socketID}"
+      return null
+  
   activeSessionsForAccount = (account, callback) => #callback([Session])
     activeSessions = []
     if account.sessions?
@@ -110,7 +151,7 @@ swypApp = require('zappa').app ->
         if (obj.expiration > new Date() || (obj.expiration?) == false) && @io.sockets.socket(obj.socketID)?
           activeSessions.push(obj)
     callback(activeSessions)
-
+  
   @post '/signup', (req, res) ->
     userName   = req.body.user_name
     userPassword = req.body.user_pass
@@ -236,6 +277,7 @@ swypApp = require('zappa').app ->
         return
       session.socketID = @id
       location  = @data.location
+      oldLocation = session.location
       session.location = location
       #console.log session.valueOf()
       user.save (error) => #[{"location":[44.680997,10.317557],"socketID":"1998803106463826141","token":"TOKENBLAH_alex"}]
@@ -244,14 +286,9 @@ swypApp = require('zappa').app ->
           @emit serverError: ->
         else
           @emit updateGood: {}
-          accountsAndSessionsNearLocation location, (sessionsByAccount) =>
-            for extAccount in sessionsByAccount
-              for extSession in extAccount[1]
-                console.log "extSession #{extSession.socketID} vs this session #{session.socketID}"
-              #  if extSession.socketID != session.socketID #this means the sessions represent unique clients
-                if @io.sockets.sockets[extSession.socketID]?
-                  console.log "user #{extAccount[0].userName} w./ External session to update #{extSession.socketID} w. socket #{@io.sockets.sockets[extSession.socketID]}"
-                  @io.sockets.sockets[extSession.socketID].emit('nearbyRefresh', {})
+          updateUniqueActiveSessionsNearLocationArray [location, oldLocation], (err) =>
+            console.log err
+
   @on swypOut: ->
     tokenValidate @data.token, (user, session) =>
       if user == null
