@@ -248,10 +248,10 @@ swypApp = require('zappa').app ->
             for extAccount in sessionsByAccount
               for extSession in extAccount[1]
                 if extSession != session
-      #            console.log @io.sockets.socket(extSession.socketid)
-                  process.nextTick =>
-                    console.log "External session to update #{extSession.socketID} w. socket #{@io.sockets.socket(extSession.socketID)}"
-                    @io.sockets.socket(extSession.socketid).emit nearbyRefresh: {}
+                  #this next part has got me stuck
+                  #how do we update the nearby folks properly if this doesn't work? Check the logs, it emits, but it's never received as a packet.
+                  console.log "External session to update #{extSession.socketID} w. socket #{@io.sockets.sockets[extSession.socketID]}"
+                  @io.sockets.sockets[extSession.socketID].emit nearbyRefresh: {} if @io.sockets.sockets[extSession.socketID]?
 
   @on swypOut: ->
     tokenValidate @data.token, (user, session) =>
