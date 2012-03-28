@@ -86,6 +86,7 @@ swypApp = require('zappa').app ->
       callback userFound, session
 #      console.log "found user #{userFound} for session #{session} andtoken #{token}"
 
+# checkyourselfbeforeyouwreckyourself.... asynchronous recersion, yo.
   recursiveGetAccountsAtLocationArray = (index, locationsArray, uniqueAccounts, callback) => #recursive function #callback(error, uniqueAccounts)
     maxDistanceRadial = 1/6378 #in radial coord km/radiusEarth *ONLY WORKS ON EARTH*
     nextAccounts = []
@@ -108,13 +109,13 @@ swypApp = require('zappa').app ->
       activeSessions = []
       uniqueAccounts.forEach (obj, i) =>
         activeSessionsForAccount obj, (sessionsForAccount) =>
-          if sessionsForAccount? &&  sessionsForAccount.length > 0
+          if sessionsForAccount[0]?
             activeSessions = activeSessions.concat(sessionsForAccount)
       for session in activeSessions
-        relevantAccountsAndSessionsForSession (session), (relevantUpdate) =>
-          socket = socketForSession(session)
+        relevantAccountsNearSession (session), (relevantUpdate, theSession) =>
+          socket = socketForSession(theSession)
           if socket? && relevantUpdate?
-            console.log "nearbyrefreshing for sessionID #{session.socketID}"
+            console.log "nearbyrefreshing for sessionID #{theSession.socketID}"
             socket.emit('nearbyRefresh', relevantUpdate)
 
   accountsAndSessionsNearLocation = (location, callback) -> #callback([{sessions:[Session], account: Account}])
@@ -134,9 +135,16 @@ swypApp = require('zappa').app ->
       
       callback(sessionsByAccount)
   
-  relevantAccountsAndSessionsForSession = (session, callback) -> #callback([{sessions:[Session], account: Account}])
-    callback {name: "alextestrelevant"}
-
+  relevantAccountsNearSession = (session, callback) -> #callback([{sessions:[Session], account: Account}], theSession)
+    Account.find { "sessions.location" : { $nearSphere : [44.680997,10.317557], $maxDistance : 1/6378  }}, {userName: 1, userImageURL: 1} , (err, docs) =>
+      if err?
+         console.log "error on session location lookup #{err}"
+         return
+      if docs?
+        sendVal = {nearby: docs}
+        #console.log sendVal
+        callback sendVal, session
+    
   socketForSession = (session) =>
     if @io.sockets.sockets[session.socketID]?
       return @io.sockets.sockets[session.socketID]
@@ -413,7 +421,7 @@ swypApp = require('zappa').app ->
       $('body').append "<br />you updated successfully!"
     
     @on nearbyRefresh: ->
-      $('body').append "<br />received a nearby session update!"
+      $('body').append "<br />received a nearby session update! w. nearby: #{JSON.stringify(@data.nearby)}"
 
     @on updateRequest: ->
       $('body').append "<br />update requested!"
