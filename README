@@ -1,0 +1,16 @@
+get a heroku account
+heroku.com
+get invite from alex for repo
+
+get heroku command line interface tools
+https://devcenter.heroku.com/articles/heroku-command
+
+Install node js
+http://nodejs.org/#download
+
+get node package manager
+1. type npm -- if it works, go to next install
+2. if not, go here and follow instructions http://npmjs.org/
+
+get coffee script (javascript cross-compiler https://github.com/jashkenas/coffee-script/) 
+npm install -g coffee-script
