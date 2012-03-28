@@ -14,3 +14,12 @@ get node package manager
 
 get coffee script (javascript cross-compiler https://github.com/jashkenas/coffee-script/) 
 npm install -g coffee-script
+
+cd into your heroku swypserver folder
+install zappa
+npm install zappa
+
+particularly important files for neophytes:
+1. ./swyp.coffee the main file called for execution (change something? 'coffee swyp.coffee')
+2. views/index.coffee the main view for the swyp web interface
+3. ./swypClient.coffee the client scripting file for events received from the server
