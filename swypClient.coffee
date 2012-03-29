@@ -7,7 +7,17 @@
           console.log res
     $ =>
       $('#swypOut_button').click (e) =>
-        @emit swypOut: {token: $("#token_input").val(), previewImage: "NONE!", fileTypes: ["image/png", "image/jpeg"]}
+       pngFileType = {
+          fileURL : "http://swyp.us/guide/setupPhotos/setup1.png"
+          fileMIME : "image/png"
+        }
+
+       jpegFileType = {
+          fileURL : "http://fluid.media.mit.edu/people/natan/media/swyp/swyp.jpg"
+          fileMIME : "image/jpeg"
+        }
+
+        @emit swypOut: {token: $("#token_input").val(), previewImage: "NONE!", fileTypes: [pngFileType, jpegFileType]}
  
       $("#statusupdate_button").click ->
         makeStatusUpdate()
@@ -17,10 +27,10 @@
  
     @on swypInAvailable: ->
       console.log "swyp in available"
-      $('body').append "<br /> @ #{@data.time} swypIn avail w.ID #{@data.id} from #{@data.from.id} with types: #{@data.fileTypes}"
+      $('body').append "<br /> @ #{@data.dateCreated} swypIn avail w.ID #{@data._id} from #{@data.swypOuter} with types: #{@data.fileTypes}"
 
     @on swypOutPending: ->
-      $('body').append "<br /> did swypOut @ #{@data.time} w.ID #{@data.id}"
+      $('body').append "<br /> did swypOut @ #{@data.time} w.ID #{@data._id}"
 
     @on welcome: ->
       $('body').append "Hey Ethan, socket.io says the time!: #{@data.time}"

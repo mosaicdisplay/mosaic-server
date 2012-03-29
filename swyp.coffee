@@ -20,10 +20,27 @@ AccountSchema = new Schema {
   sessions : [Session]
 }
 
+FileTypeSchema = new Schema {
+  fileURL : String
+  fileMIME : String
+  requestingUserIDs : [String]
+  uploadTimeoutDate : Date
+  uploadCompletionDate : Date
+}
+
+SwypSchema = new Schema {
+  swypOuterID : String,
+  swypRecipientID : String,
+  dateCreated : Date,
+  dateExpires : Date,
+  previewImageJPG : String,
+  fileTypes : [FileType]
+}
+
 ###
 Swyp Schema -- Determine whether embedded in session, or seperate
 • Swyps created on swypOut event
-• Swyps store track:
+• Swyps stored track:
   - fileTypes [array of hashtables]
     - URL location
     - Requesting userIDs
@@ -61,6 +78,8 @@ UserSchema.plugin mongooseAuth, {
 
 User = mongoose.model 'User', UserSchema
 Account = mongoose.model 'Account', AccountSchema
+Swyp = mongoose.model 'Swyp', SwypSchema
+FileType = mongoose.model 'Swyp.fileTypes', FileTypeSchema
 mongoose.connect('mongodb://swyp:mongo4swyp2012@ds031587.mongolab.com:31587/heroku_app3235025')
 
 `Array.prototype.unique = function() {    var o = {}, i, l = this.length, r = [];    for(i=0; i<l;i+=1) o[this[i]] = this[i];    for(i in o) r.push(o[i]);    return r;};`
@@ -120,22 +139,21 @@ swypApp = require('zappa').app ->
             console.log "nearbyrefreshing for sessionID #{theSession.socketID}"
             socket.emit('nearbyRefresh', relevantUpdate)
 
-  accountsAndSessionsNearLocation = (location, callback) -> #callback([{sessions:[Session], account: Account}])
+  accountsAndSessionsNearLocation = (location, callback) -> #callback([{sessions:[Session], account: Account}], allSessions)
     #for now we just return all active sessions for accounts with any nearby session
-    sessionsByAccount = []
-    query = null
-    Account.find { "sessions.location" : { $nearSphere : [44.680997,10.317557], $maxDistance : 1/6378  }}, (err, docs) =>
+    recursiveGetAccountsAtLocationArray 0,[location],[], (error, uniqueAccounts)=>
+      allSessions = []
+      sessionsByAccount = []
       if err?
         console.log "error on session location lookup #{err}"
         return
-      if docs?
-        docs.forEach (obj, i) =>
-          activeSessionsForAccount obj, (sessionsForAccount) =>
-            if sessionsForAccount? &&  sessionsForAccount.length > 0
-              console.log "active session docs #{sessionsForAccount}"
-              sessionsByAccount.push([ obj, sessionsForAccount])
-      
-      callback(sessionsByAccount)
+      for obj in uniqueAccounts
+        activeSessionsForAccount obj, (sessionsForAccount) =>
+          if sessionsForAccount? &&  sessionsForAccount.length > 0
+            sessionsByAccount.push([ obj, sessionsForAccount])
+            allSessions = allSessions.concat(sessionsForAccount)
+      console.log "#{allSessions.length}# active session local"
+      callback(sessionsByAccount, allSessions)
   
   relevantAccountsNearSession = (session, callback) -> #callback([{sessions:[Session], account: Account}], theSession)
     Account.find { "sessions.location" : { $nearSphere : [44.680997,10.317557], $maxDistance : 1/6378  }}, {userName: 1, userImageURL: 1} , (err, docs) =>
@@ -280,20 +298,37 @@ swypApp = require('zappa').app ->
       supportedTypes = @data.fileTypes
       previewImage   = @data.previewImage
       recipientTo    = @data.to
-      fromSender     = user
+      fromSender     = user.userID
       swypTime       = new Date()
-      console.log "swyp out created supports types #{supportedTypes}"
-      @emit swypOutPending:
-        {id: contentID, \
-        time: swypTime}
+      swypExpire = new Date(new Date().valueOf()+50) #expires in 50 seconds
+     
+      fileTypesToSave = []
+      for type in @data.fileTypes
+         fileTypeObj = new FileType {fileMIME: type.fileMIME, fileURL: type.fileURL} #no upload or completion date or timeouts
+         fileTypesToSave.push fileTypeObj
+      nextSwyp = new Swyp {previewImage: previewImage, swypOuter: fromSender, dateCreated: swypTime, dateExpires: swypExpire, fileTypes: fileTypesToSave}
+      console.log nextSwyp
+      nextSwyp.save (error) =>
+        if error != null
+          console.log "didFailSave", error
+          return
+        @emit swypOutPending: nextSwyp
+        console.log "new swypOut saved"
+        accountsAndSessionsNearLocation session.location, (sessionsByAccount, allSessions) =>
+          for toUpdateSession in allSessions
+            socket = socketForSession(toUpdateSession)
+            if socket? && toUpdateSession.socketID != session.socketID
+               console.log "updating swypout for sessionID #{toUpdateSession.socketID}"
+               socket.emit('swypInAvailable', nextSwyp)
       #will limit to nearby users later
+      ###
       @broadcast swypInAvailable:
          {id: contentID, \
          fileTypes: supportedTypes,\
          preview: previewImage,\
          from: fromSender, \
          time: swypTime}
-    
+      ###
   @on swypIn: ->
     tokenValidate @data.token, (user, session) =>
       if user == null
