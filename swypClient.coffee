@@ -1,5 +1,14 @@
 @include = ->
   @client '/swyp.js': ->
+   
+    #type defs
+    imageJPEGType = "image/jpeg"
+    imagePNGType = "image/png"
+    #swyp api data
+    swypObjByID = []
+
+    supportedFileTypes = [imageJPEGType, imagePNGType] #in order of preference more->less
+
     $('document').ready ->
       $('#logout').click (e)->
         e.preventDefault()
@@ -7,30 +16,51 @@
           console.log res
     $ =>
       $('#swypOut_button').click (e) =>
-       pngFileType = {
+       pngFile = {
           fileURL : "http://swyp.us/guide/setupPhotos/setup1.png"
-          fileMIME : "image/png"
+          fileMIME : imagePNGType
         }
 
-       jpegFileType = {
+       jpegFile = {
           fileURL : "http://fluid.media.mit.edu/people/natan/media/swyp/swyp.jpg"
-          fileMIME : "image/jpeg"
+          fileMIME : imageJPEGType
         }
 
-        @emit swypOut: {token: $("#token_input").val(), previewImage: "NONE!", fileTypes: [pngFileType, jpegFileType]}
+        @emit swypOut: {token: localSessionToken(), previewImage: "NONE!", fileTypes: [pngFile, jpegFile]}
  
       $("#statusupdate_button").click ->
         makeStatusUpdate()
+    
+    localSessionToken = =>
+      return $("#token_input").val()
+    
+    makeSwypIn = (swypObjID) =>
+      if swypObjByID[swypObjID]?
+        console.log "swyp in started for #{swypObjID}"
+        swypObj = swypObjByID[swypObjID]
+        commonTypes = supportedFileTypes.intersect(swypObj.fileTypes)
+        if commonTypes[0]?
+          @emit swypIn: {token: localSessionToken(), id: swypObj.id, fileType:commonTypes[0]}
+        else
+          console.log "no common filetypes for swyp"
+      else
+        console.log "swypObj not stored for id#{swypObjID}"
+
 
     makeStatusUpdate = =>
-      @emit statusUpdate: {token: $("#token_input").val(), location: [44.680997,10.317557]}
+      @emit statusUpdate: {token: localSessionToken(), location: [44.680997,10.317557]}
  
     @on swypInAvailable: ->
-      console.log "swyp in available"
-      $('body').append "<br /> @ #{@data.dateCreated} swypIn avail w.ID #{@data._id} from #{@data.swypOuter} with types: #{@data.fileTypes}"
+      console.log @data
+      swypObjByID[@data.id] = @data #{dateCreated: @data.dateCreated, id: @data.id, swypOuter: @data.swypOuter, availableMimeTypes: @data.availableMIMETypes}
+      console.log "swyp in available #{@data.id}"
+      $('body').append "<br /> @ #{@data.dateCreated} swypIn avail w.ID #{@data.id} from #{@data.swypOuter} with types: #{@data.availableMIMETypes}"
+      $('body').append "<input id= 'button_#{@data.id}', type= 'button', value='swyp in!'>"
+      $("#button_#{@data.id}").bind 'click', =>
+          makeSwypIn(@data.id)
 
     @on swypOutPending: ->
-      $('body').append "<br /> did swypOut @ #{@data.time} w.ID #{@data._id}"
+      $('body').append "<br /> did swypOut @ #{@data.time} w.ID #{@data.id}"
 
     @on welcome: ->
       $('body').append "Hey Ethan, socket.io says the time!: #{@data.time}"

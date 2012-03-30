@@ -82,6 +82,7 @@ Swyp = mongoose.model 'Swyp', SwypSchema
 FileType = mongoose.model 'Swyp.fileTypes', FileTypeSchema
 mongoose.connect('mongodb://swyp:mongo4swyp2012@ds031587.mongolab.com:31587/heroku_app3235025')
 
+require('./public/ArraySetMath.js')
 `Array.prototype.unique = function() {    var o = {}, i, l = this.length, r = [];    for(i=0; i<l;i+=1) o[this[i]] = this[i];    for(i in o) r.push(o[i]);    return r;};`
 
 swypApp = require('zappa').app ->
@@ -302,24 +303,28 @@ swypApp = require('zappa').app ->
       swypTime       = new Date()
       swypExpire = new Date(new Date().valueOf()+50) #expires in 50 seconds
      
-      fileTypesToSave = []
+      fileTypesToSave = [] #this is for the datastore
+      fileTypesToSend = [] #this is for the swyp-out event
       for type in @data.fileTypes
          fileTypeObj = new FileType {fileMIME: type.fileMIME, fileURL: type.fileURL} #no upload or completion date or timeouts
          fileTypesToSave.push fileTypeObj
+         fileTypesToSend.push type.fileMIME
+
       nextSwyp = new Swyp {previewImage: previewImage, swypOuter: fromSender, dateCreated: swypTime, dateExpires: swypExpire, fileTypes: fileTypesToSave}
       console.log nextSwyp
       nextSwyp.save (error) =>
         if error != null
           console.log "didFailSave", error
           return
-        @emit swypOutPending: nextSwyp
+        swypOutPacket = {id: nextSwyp._id, swypOuter: nextSwyp.swypOuter, dateCreated: nextSwyp.dateCreated, dateExpires: nextSwyp.dateExpires, availableMIMETypes: fileTypesToSend}
+        @emit swypOutPending: swypOutPacket #this sends only the MIMES
         console.log "new swypOut saved"
         accountsAndSessionsNearLocation session.location, (sessionsByAccount, allSessions) =>
           for toUpdateSession in allSessions
             socket = socketForSession(toUpdateSession)
             if socket? && toUpdateSession.socketID != session.socketID
                console.log "updating swypout for sessionID #{toUpdateSession.socketID}"
-               socket.emit('swypInAvailable', nextSwyp)
+               socket.emit('swypInAvailable', swypOutPacket)
       #will limit to nearby users later
       ###
       @broadcast swypInAvailable:
