@@ -95,13 +95,14 @@ swypApp = require('zappa').app ->
     else
       callback null, uniqueAccounts
 
+# here we iterate over all active sessions near the old and new location of a session, then we update each session with its relevant nearby users
   updateUniqueActiveSessionsNearLocationArray = (locations, callback) => #callback(error)
     recursiveGetAccountsAtLocationArray 0,locations,[], (error, uniqueAccounts)=>
       activeSessions = []
       uniqueAccounts.forEach (obj, i) =>
-        activeSessionsForAccount obj, (sessionsForAccount) =>
-          if sessionsForAccount[0]?
-            activeSessions = activeSessions.concat(sessionsForAccount)
+        sessionsForAccount = activeSessionsForAccount obj
+        if sessionsForAccount[0]?
+          activeSessions = activeSessions.concat(sessionsForAccount)
       for session in activeSessions
         relevantAccountsNearSession (session), (relevantUpdate, theSession) =>
           socket = socketForSession(theSession)
@@ -118,21 +119,40 @@ swypApp = require('zappa').app ->
         console.log "error on session location lookup #{err}"
         return
       for obj in uniqueAccounts
-        activeSessionsForAccount obj, (sessionsForAccount) =>
-          if sessionsForAccount? &&  sessionsForAccount.length > 0
-            sessionsByAccount.push([ obj, sessionsForAccount])
-            allSessions = allSessions.concat(sessionsForAccount)
+        sessionsForAccount = activeSessionsForAccount obj
+        if sessionsForAccount? &&  sessionsForAccount.length > 0
+          sessionsByAccount.push([ obj, sessionsForAccount])
+          allSessions = allSessions.concat(sessionsForAccount)
       console.log "#{allSessions.length}# active session local"
       callback(sessionsByAccount, allSessions)
   
+  accountOwnsSession = (account, session) ->
+    for ses in account.sessions
+      if ses._id == session._id
+        return true
+    return false
+   
   relevantAccountsNearSession = (session, callback) -> #callback([{sessions:[Session], account: Account}], theSession)
-    Account.find { "sessions.location" : { $nearSphere : [44.680997,10.317557], $maxDistance : 1/6378  }}, {userName: 1, userImageURL: 1} , (err, docs) =>
+    Account.find {"sessions.location" : { $nearSphere : session.location, $maxDistance : 1/6378  }}, {userName: 1, userImageURL: 1, sessions: 1} , (err, docs) =>
       if err?
          console.log "error on session location lookup #{err}"
          return
       if docs?
-        sendVal = {nearby: docs}
-        #console.log sendVal
+        relevantAccounts = []
+        for acc in docs
+          if accountOwnsSession acc, session
+            sessionsForAccount = activeSessionsForAccount acc
+            #if more than one active session for the current account, then good!
+            if sessionsForAccount[1]?
+              relevantAccounts.push acc
+            else
+              console.log "current user w. session #{session.socketID} ignored bcuz only 1 session"
+          else
+            relevantAccounts.push acc
+        #don't need to send session details to every client, we don't save, so this is NBD
+        for acc in relevantAccounts
+          acc.sessions = undefined
+        sendVal = {nearby: relevantAccounts}
         callback sendVal, session
     
   socketForSession = (session) =>
@@ -142,13 +162,13 @@ swypApp = require('zappa').app ->
       console.log "session no socket #{session.socketID}"
       return null
   
-  activeSessionsForAccount = (account, callback) => #callback([Session])
+  activeSessionsForAccount = (account) => #callback([Session])
     activeSessions = []
     if account.sessions?
       account.sessions.forEach (obj, i) =>
         if (obj.expiration > new Date() || (obj.expiration?) == false) && @io.sockets.socket(obj.socketID)?
           activeSessions.push(obj)
-    callback(activeSessions)
+    return activeSessions
   
   @post '/signup', (req, res) ->
     userName   = req.body.user_name
