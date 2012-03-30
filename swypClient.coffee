@@ -6,6 +6,7 @@
     imagePNGType = "image/png"
     #swyp api data
     swypObjByID = []
+    userLocation = [44.680997,10.317557] # a lat/lng pair
 
     supportedFileTypes = [imageJPEGType, imagePNGType] #in order of preference more->less
 
@@ -47,8 +48,20 @@
         console.log "swypObj not stored for id#{swypObjID}"
 
 
+    getLocationInfo = ->
+      if navigator.geolocation
+        navigator.geolocation.getCurrentPosition(
+          (pos)->
+            console.log "lat: #{pos.coords.latitude} long: #{pos.coords.longitude}"
+            userLocation = [pos.coords.latitude, pos.coords.longitude]
+          (error)->
+            console.log error
+        )
+
     makeStatusUpdate = =>
-      @emit statusUpdate: {token: localSessionToken(), location: [44.680997,10.317557]}
+      console.log 'making status update'
+      getLocationInfo()
+      @emit statusUpdate: {token: localSessionToken(), location: userLocation}
  
     @on swypInAvailable: ->
       console.log @data
@@ -59,15 +72,6 @@
       $("#button_#{@data.id}").bind 'click', =>
           makeSwypIn(@data.id)
 
-
-    getLocationInfo = ->
-      if navigation.geolocation
-        navigator.geolocation.getCurrentPosition(
-          (pos)->
-            console.log "lat: #{pos.coords.latitude} long: #{pos.coords.longitude}"
-          (error)->
-            console.log error
-        )
 
     @on swypOutPending: ->
       $('body').append "<br /> did swypOut @ #{@data.time} w.ID #{@data.id}"
