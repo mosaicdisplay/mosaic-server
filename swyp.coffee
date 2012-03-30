@@ -82,7 +82,7 @@ Swyp = mongoose.model 'Swyp', SwypSchema
 FileType = mongoose.model 'Swyp.fileTypes', FileTypeSchema
 mongoose.connect('mongodb://swyp:mongo4swyp2012@ds031587.mongolab.com:31587/heroku_app3235025')
 
-require('./public/ArraySetMath.js')
+#require('./public/ArraySetMath.js')
 `Array.prototype.unique = function() {    var o = {}, i, l = this.length, r = [];    for(i=0; i<l;i+=1) o[this[i]] = this[i];    for(i in o) r.push(o[i]);    return r;};`
 
 swypApp = require('zappa').app ->
