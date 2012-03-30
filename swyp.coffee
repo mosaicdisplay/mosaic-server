@@ -186,6 +186,9 @@ swypApp = require('zappa').app ->
     console.log req.body
     reqName  = req.body.user_name
     reqPassword = req.body.user_pass
+    fbId = req.body.fb_uid
+    fbToken = req.body.fb_token
+
     Account.find {userName: reqName}, (err, docs)  =>
       matchingUser = docs[0]
       #console.log 'docs',docs, 'with first', matchingUser
@@ -222,7 +225,14 @@ swypApp = require('zappa').app ->
   @view login: ->
     @title = 'login'
     @stylesheets = ['/style']
-    @scripts = ['/zappa/jquery','/zappa/zappa']
+    @scripts = ['/zappa/jquery','/zappa/zappa', '/facebook']
+
+    if process.env.NODE_ENV is 'production'
+      coffeescript ->
+        window.app_id = '359933034051162'
+    else
+      coffeescript ->
+        window.app_id = '194436507332185'
 
     if @token != undefined && @userID != undefined
       p "{\"userID\" : \"#{@userID}\", \"token\" : \"#{@token}\"}"
@@ -230,8 +240,17 @@ swypApp = require('zappa').app ->
       form method: 'post', action: '/token', ->
         input id: 'user_name', type: 'text', name: 'user_name', placeholder: 'login user', size: 50
         input id: 'user_pass', type: 'text', name: 'user_pass', placeholder: 'login pass', size: 50
+        input id: 'fb_uid', type: 'hidden', name: 'fb_uid'
+        input id: 'fb_token', type: 'hidden', name: 'fb_token'
         button 'get token'
-  
+
+    div '#fb-root', ->
+      img '#fb_photo.hidden', src: ''
+      a '#logout.hidden', href: "#", ->
+        'Unlink Facebook account'
+      div '#fb-login.fb-login-button.hidden', ->
+        'Link account with Facebook'
+
   @get '/': ->
     @render index: {}
 
@@ -341,6 +360,9 @@ swypApp = require('zappa').app ->
           uid = res.authResponse.userID
           access_token = res.authResponse.accessToken
           console.log "authorized with uid: #{uid} and access token: #{access_token}"
+          $("#fb_photo").removeClass("hidden").attr("src", "http://graph.facebook.com/#{uid}/picture")
+          $('#fb_uid').val uid
+          $('#fb_token').val access_token
           $('#logout').removeClass('hidden')
           $('#fb-login').addClass('hidden')
         when 'not_authorized'
@@ -348,6 +370,10 @@ swypApp = require('zappa').app ->
         else # user is not logged in
           $('#logout').addClass('hidden')
           $('#fb-login').removeClass('hidden')
+
+    $('#logout').live 'click', (e)->
+      FB.logout (res)->
+        console.log res
 
     window.fbAsyncInit = ->
       FB.init {
