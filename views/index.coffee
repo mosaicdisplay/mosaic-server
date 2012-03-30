@@ -13,8 +13,7 @@ else
     window.app_id = '194436507332185'
 
 script src: '/facebook.js'
-script src: '/ArraySetMath.js'
-            
+
 h1 @title
 input id: 'token_input', type: 'text', name: 'token_input', placeholder: 'session token', size: 50, value: 'TOKENBLAH_alex'
 input id: 'statusupdate_button', type: 'button', value: "status update!"

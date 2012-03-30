@@ -59,6 +59,16 @@
       $("#button_#{@data.id}").bind 'click', =>
           makeSwypIn(@data.id)
 
+
+    getLocationInfo = ->
+      if navigation.geolocation
+        navigator.geolocation.getCurrentPosition(
+          (pos)->
+            console.log "lat: #{pos.coords.latitude} long: #{pos.coords.longitude}"
+          (error)->
+            console.log error
+        )
+
     @on swypOutPending: ->
       $('body').append "<br /> did swypOut @ #{@data.time} w.ID #{@data.id}"
 
