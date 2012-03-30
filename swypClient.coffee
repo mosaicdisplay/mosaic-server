@@ -6,7 +6,7 @@
     imagePNGType = "image/png"
     #swyp api data
     swypObjByID = []
-    userLocation = [44.680997,10.317557] # a lat/lng pair
+    userLocation = [44.680997,10.317557] # a lng/lat pair
 
     supportedFileTypes = [imageJPEGType, imagePNGType] #in order of preference more->less
 
@@ -52,7 +52,7 @@
       if navigator.geolocation
         navigator.geolocation.getCurrentPosition(
           (pos)->
-            userLocation = [pos.coords.latitude, pos.coords.longitude]
+            userLocation = [pos.coords.longitude, pos.coords.latitude]
           (error)->
             console.log error
         )
