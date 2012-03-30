@@ -49,34 +49,6 @@ Swyp Schema -- Determine whether embedded in session, or seperate
   - previewImage
 ###
 
-UserSchema = new Schema {}
-
-UserSchema.plugin mongooseAuth, {
-  everymodule: {
-    everyauth: {
-      User: -> User
-    }
-  }
-  facebook: true
-  password: {
-    loginWith: 'email'
-    everyauth: {
-        getLoginPath: '/login'
-        postLoginPath: '/login'
-        loginView: 'login.coffee'
-        getRegisterPath: '/register'
-        postRegisterPath: '/register'
-        registerView: 'register.coffee'
-        loginSuccessRedirect: '/'
-        registerSuccessRedirect: '/'
-    }
-  }
-  handleLogout: (req, res)->
-    req.logout()
-    res.json {'message': 'User logged out.'}
-}
-
-User = mongoose.model 'User', UserSchema
 Account = mongoose.model 'Account', AccountSchema
 Swyp = mongoose.model 'Swyp', SwypSchema
 FileType = mongoose.model 'Swyp.fileTypes', FileTypeSchema
