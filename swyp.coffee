@@ -1,5 +1,4 @@
 mongoose     = require('mongoose')
-mongooseAuth = require('mongoose-auth')
 Schema = mongoose.Schema
 ObjectId = mongoose.SchemaTypes.ObjectId
 
@@ -58,7 +57,6 @@ mongoose.connect('mongodb://swyp:mongo4swyp2012@ds031587.mongolab.com:31587/hero
 
 swypApp = require('zappa').app ->
   @use 'bodyParser', 'static', 'cookieParser', session: {secret: 'gesturalsensation'}
-  @app.use mongooseAuth.middleware()
   @enable 'default layout' # this is hella convenient
 
   @io.set("transports", ["xhr-polling"])
@@ -375,6 +373,5 @@ swypApp = require('zappa').app ->
   #client code moved to swypClient.coffee
 
 port = if process.env.PORT > 0 then process.env.PORT else 3000
-mongooseAuth.helpExpress swypApp.app
 swypApp.app.listen port
 console.log "starting on port # #{port}"
