@@ -52,14 +52,12 @@
       if navigator.geolocation
         navigator.geolocation.getCurrentPosition(
           (pos)->
-            console.log "lat: #{pos.coords.latitude} long: #{pos.coords.longitude}"
             userLocation = [pos.coords.latitude, pos.coords.longitude]
           (error)->
             console.log error
         )
 
     makeStatusUpdate = =>
-      console.log 'making status update'
       getLocationInfo()
       @emit statusUpdate: {token: localSessionToken(), location: userLocation}
  
