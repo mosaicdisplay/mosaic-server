@@ -4,10 +4,14 @@
 <script type="text/javascript" src="d3.v2.min.js"></script>
 <script type="text/javascript" src="force.js"></script>
 <style type="text/css">
-.link { stroke: #ccc; }
-.hovered { stroke: #000; }
-.nodetext { pointer-events: none; font: 14px sans-serif; }
-.hovered.nodetext { stroke: #ccc; }
+.link { stroke: none; }
+.nodetext { pointer-events: none; font: 16px sans-serif; font-weight:bold; padding: 16px; }
+.node { background-color: #000;}
+.hovered .nodetext { fill: #fff; stroke: none; }
+svg { -webkit-transition: opacity 0.2s linear; }
+.hidden { opacity: 0; }
+.rect { fill: #ccc; }
+.hovered .rect { fill: #0099cc; }
 </style>
 </head>
 <body>
@@ -39,36 +43,32 @@ var x, y;
 var node, link;
 var force = self.force = d3.layout.force();
 
-var vis = body.append("svg:svg");
+var vis = body.append("svg:svg").attr("class", "hidden");
 
 // add support for d3.touches too
 body.on("mousedown", function(){
+  vis.attr("class", "visible");
   x = d3.event.x;
   y = d3.event.y;
   force.start();
   
   body.on("mousemove", function(){
-    link.each(function(d, i){
-      d3.select(this).attr("class", collides(this, d3.event) ? 
-                                    "hovered": "link");
-    });
-
     node.each(function(d, i){
       d3.select(this).attr("class", collides(this, d3.event) ? 
                                     "hovered": "node");
     });
   });
 }).on("mouseup", function(){
-  link.attr("class", "link");
   node.attr("class", "node");
   body.on("mousemove", null);
+  vis.attr("class", "hidden");
 });
 
 d3.json("graph.json", function(json) {
     force.nodes(json.nodes)
         .links(json.links)
         .gravity(0)
-        .distance(100)
+        .distance(200)
         .charge(-500)
         .start();
 
@@ -84,19 +84,29 @@ d3.json("graph.json", function(json) {
     node = vis.selectAll("g.node")
         .data(json.nodes)
       .enter().append("svg:g")
-        .attr("class", "node");
+        .attr("class", "node")
+
+    node.filter(function(d,i){
+      // don't give the center a rectangle
+      return (i !== 0);
+    }).append("svg:rect")
+      .attr("class", "rect")
+      .attr("x", "-16px")
+      .attr("y", "-20px")
+      .attr("width", "200px")
+      .attr("height", "40px");
 
     node.append("svg:image")
         .attr("class", "circle")
-        .attr("xlink:href", "https://d3nwyuy0nl342s.cloudfront.net/images/icons/public.png")
-        .attr("x", "-8px")
-        .attr("y", "-8px")
-        .attr("width", "16px")
-        .attr("height", "16px");
+        .attr("xlink:href", function(d){ return d.picture;})
+        .attr("x", "-16px")
+        .attr("y", "-20px")
+        .attr("width", "40px")
+        .attr("height", "40px");
 
     node.append("svg:text")
         .attr("class", "nodetext")
-        .attr("dx", 12)
+        .attr("dx", 32)
         .attr("dy", ".35em")
         .text(function(d) { return d.name });
 
