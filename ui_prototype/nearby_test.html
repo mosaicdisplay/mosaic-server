@@ -46,25 +46,36 @@ var force = self.force = d3.layout.force();
 var vis = body.append("svg:svg").attr("class", "hidden");
 
 // add support for d3.touches too
-body.on("mousedown", function(){
-  d3.event.preventDefault();
-  d3.event.stopPropagation();
-  vis.attr("class", "visible");
-  x = d3.event.x;
-  y = d3.event.y;
-  force.start();
-  
-  body.on("mousemove", function(e){
-    node.each(function(d, i){
-      d3.select(this).attr("class", collides(this, d3.event) ? 
-                                    "hovered": "node");
+var touchevents = ["touchstart", "touchmove", "touchend"];
+var mouseevents = ["mousedown", "mousemove", "mouseup"];
+
+var register_events = function(eventa){
+  var touching = eventa[0].indexOf("touch") !== -1;
+  body.on(eventa[0], function(){
+    d3.event.preventDefault();
+    d3.event.stopPropagation();
+    vis.attr("class", "visible");
+
+    var xy = touching ? d3.touches(this)[0] : d3.mouse(this);
+    x = xy[0];
+    y = xy[1];
+    force.start();
+    
+    body.on(eventa[1], function(e){
+      node.each(function(d, i){
+        d3.select(this).attr("class", collides(this, d3.event) ? 
+                                      "hovered": "node");
+      });
     });
+  }).on(eventa[2], function(){
+    node.attr("class", "node");
+    body.on("mousemove", null);
+    vis.attr("class", "hidden");
   });
-}).on("mouseup", function(){
-  node.attr("class", "node");
-  body.on("mousemove", null);
-  vis.attr("class", "hidden");
-});
+}
+
+register_events(touchevents);
+register_events(mouseevents);
 
 d3.json("graph.json", function(json) {
     force.nodes(json.nodes)
