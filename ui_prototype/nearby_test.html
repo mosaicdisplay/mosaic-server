@@ -5,7 +5,9 @@
 <script type="text/javascript" src="force.js"></script>
 <style type="text/css">
 .link { stroke: #ccc; }
+.hovered { stroke: #000; }
 .nodetext { pointer-events: none; font: 14px sans-serif; }
+.hovered.nodetext { stroke: #ccc; }
 </style>
 </head>
 <body>
@@ -22,6 +24,16 @@ function resize() {
      .attr("height", h);
 }
 
+var collides = function(el, event){
+  var rect = el.getBoundingClientRect();
+
+  if ((event.x >= rect.left && event.x <= rect.right) &&
+      (event.y >= rect.top && event.y <= rect.bottom)){
+    return true;
+  }
+  return false;
+}
+
 var x, y;
 
 var node, link;
@@ -29,10 +41,27 @@ var force = self.force = d3.layout.force();
 
 var vis = body.append("svg:svg");
 
-body.on("click", function(){
+// add support for d3.touches too
+body.on("mousedown", function(){
   x = d3.event.x;
   y = d3.event.y;
   force.start();
+  
+  body.on("mousemove", function(){
+    link.each(function(d, i){
+      d3.select(this).attr("class", collides(this, d3.event) ? 
+                                    "hovered": "link");
+    });
+
+    node.each(function(d, i){
+      d3.select(this).attr("class", collides(this, d3.event) ? 
+                                    "hovered": "node");
+    });
+  });
+}).on("mouseup", function(){
+  link.attr("class", "link");
+  node.attr("class", "node");
+  body.on("mousemove", null);
 });
 
 d3.json("graph.json", function(json) {
@@ -81,12 +110,11 @@ d3.json("graph.json", function(json) {
 
         node.attr("transform", function(d) { 
             if (d.index === 0){
-              if (x){
+              if (x) {
                 var damper = 0.1;
                 d.x = d.x + (x - d.x) * (damper + 0.71) * e.alpha;
                 d.y = d.y + (y - d.y) * (damper + 0.71) * e.alpha;
               } else {
-                console.log(w/2);
                 d.x = 400;
                 d.y = 400;
               }
