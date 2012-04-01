@@ -9,16 +9,14 @@
 
     supportedFileTypes = [imageJPEGType, imagePNGType] #in order of preference more->less
 
-    getLocationInfo = ->
-      if navigator.geolocation
-        navigator.geolocation.getCurrentPosition(
-          (pos)->
-            console.log "Got location"
-            userLocation = [pos.coords.longitude, pos.coords.latitude]
-          (error)->
-            console.log error
-        )
-    getLocationInfo()
+    setLocation = (pos)->
+      console.log "updated location"
+      userLocation = [pos.coords.longitude, pos.coords.latitude]
+      makeStatusUpdate();
+
+    if navigator.geolocation
+      # no error handling for now
+      navigator.geolocation.watchPosition(setLocation, null);
 
     $('document').ready ->
       $('#logout').click (e)->

@@ -1,17 +1,18 @@
 <!DOCTYPE html>
 <html>
 <head>
+<meta name="viewport" content="initial-scale=1.0, width=device-width, height=device-height, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 <script type="text/javascript" src="d3.v2.min.js"></script>
 <script type="text/javascript" src="force.js"></script>
 <style type="text/css">
 html, body { width: 100%; height: 100%;}
 .link { stroke: none; }
 .nodetext { pointer-events: none; font: 16px sans-serif; font-weight:bold; padding: 16px; }
-.node { background-color: #000;}
 .hovered .nodetext { fill: #fff; stroke: none; }
 svg { -webkit-transition: opacity 0.2s linear; }
 .hidden { opacity: 0; }
 .rect { fill: #ccc; }
+.friend .rect { fill: #00cc00; }
 .hovered .rect { fill: #0099cc; }
 </style>
 </head>
@@ -57,6 +58,10 @@ var vis = body.append("svg:svg").attr("class", "hidden");
 var touch_events = ["touchstart", "touchmove", "touchend"];
 var mouse_events = ["mousedown", "mousemove", "mouseup"];
 
+var friend_class = function(d){
+  return d.friend ? "friend" : "stranger";
+}
+
 var register_events = function(){
   // instead make a global based on device type/capabilities
   var events = is_touch_device ? touch_events : mouse_events;
@@ -75,11 +80,11 @@ var register_events = function(){
     body.on(events[1], function(e){
       node.each(function(d, i){
         d3.select(this).attr("class", collides(this, real_touches(bod)) ? 
-                                      "hovered": "node");
+                                      "hovered": friend_class(d));
       });
     });
   }).on(events[2], function(){
-    node.attr("class", "node");
+    node.attr("class", friend_class);
     body.on(events[1], null);
     vis.attr("class", "hidden");
   });
@@ -107,7 +112,7 @@ d3.json("graph.json", function(json) {
     node = vis.selectAll("g.node")
         .data(json.nodes)
       .enter().append("svg:g")
-        .attr("class", "node")
+        .attr("class", function(d){ friend_class});
 
     node.filter(function(d,i){
       // don't give the center a rectangle
