@@ -1,6 +1,5 @@
 @include = ->
-  @client '/swyp.js': ->
-   
+  @client '/swyp.js': ->   
     #type defs
     imageJPEGType = "image/jpeg"
     imagePNGType = "image/png"
@@ -9,6 +8,17 @@
     userLocation = [44.680997,10.317557] # a lng/lat pair
 
     supportedFileTypes = [imageJPEGType, imagePNGType] #in order of preference more->less
+
+    getLocationInfo = ->
+      if navigator.geolocation
+        navigator.geolocation.getCurrentPosition(
+          (pos)->
+            console.log "Got location"
+            userLocation = [pos.coords.longitude, pos.coords.latitude]
+          (error)->
+            console.log error
+        )
+    getLocationInfo()
 
     $('document').ready ->
       $('#logout').click (e)->
@@ -47,18 +57,7 @@
       else
         console.log "swypObj not stored for id#{swypObjID}"
 
-
-    getLocationInfo = ->
-      if navigator.geolocation
-        navigator.geolocation.getCurrentPosition(
-          (pos)->
-            userLocation = [pos.coords.longitude, pos.coords.latitude]
-          (error)->
-            console.log error
-        )
-
     makeStatusUpdate = =>
-      getLocationInfo()
       @emit statusUpdate: {token: localSessionToken(), location: userLocation}
  
     @on swypInAvailable: ->

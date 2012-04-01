@@ -19,6 +19,7 @@ svg { -webkit-transition: opacity 0.2s linear; }
 <script type="text/javascript">
 
 var body = d3.select("body");
+var is_touch_device = 'ontouchstart' in document.documentElement;
 var w, h; 
 
 function resize() {
@@ -41,8 +42,8 @@ var collides = function(el, xy){
   return false;
 }
 
-var real_touches = function(touching, elem){
-  return touching ? d3.touches(elem)[0] : d3.mouse(elem);
+var real_touches = function(elem){
+  return is_touch_device ? d3.touches(elem)[0] : d3.mouse(elem);
 }
 
 var x, y;
@@ -53,41 +54,38 @@ var force = self.force = d3.layout.force();
 var vis = body.append("svg:svg").attr("class", "hidden");
 
 // add support for d3.touches too
-var touchevents = ["touchstart", "touchmove", "touchend"];
-var mouseevents = ["mousedown", "mousemove", "mouseup"];
+var touch_events = ["touchstart", "touchmove", "touchend"];
+var mouse_events = ["mousedown", "mousemove", "mouseup"];
 
-var register_events = function(eventa){
+var register_events = function(){
   // instead make a global based on device type/capabilities
-  var touching = eventa[0].indexOf("touch") !== -1;
+  var events = is_touch_device ? touch_events : mouse_events;
 
-  body.on(eventa[0], function(){
+  body.on(events[0], function(){
     var bod = this;
     d3.event.preventDefault();
     d3.event.stopPropagation();
     vis.attr("class", "visible");
 
-    var xy = real_touches(touching, bod);
+    var xy = real_touches(bod);
     x = xy[0];
     y = xy[1];
     force.start();
     
-    body.on(eventa[1], function(e){
+    body.on(events[1], function(e){
       node.each(function(d, i){
-        d3.select(this).attr("class", 
-          collides(this, real_touches(touching, bod)) ? 
-                   "hovered": "node");
-        if (collides(this, d3.event)) alert("WHEE");
+        d3.select(this).attr("class", collides(this, real_touches(bod)) ? 
+                                      "hovered": "node");
       });
     });
-  }).on(eventa[2], function(){
+  }).on(events[2], function(){
     node.attr("class", "node");
-    body.on("mousemove", null);
+    body.on(events[1], null);
     vis.attr("class", "hidden");
   });
 }
 
-register_events(touchevents);
-register_events(mouseevents);
+register_events();
 
 d3.json("graph.json", function(json) {
     force.nodes(json.nodes)
