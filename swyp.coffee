@@ -1,6 +1,5 @@
 mongoose     = require('mongoose')
 Schema = mongoose.Schema
-ObjectId = mongoose.SchemaTypes.ObjectId
 
 #embedded schema as suggested http://mongoosejs.com/docs/embedded-documents.html
 #   embedded seems to be the only way this works-- I had tried just literally embedding the properties (that didn't)
@@ -97,7 +96,9 @@ swypApp = require('zappa').app ->
 
 # here we iterate over all active sessions near the old and new location of a session, then we update each session with its relevant nearby users
   updateUniqueActiveSessionsNearLocationArray = (locations, callback) => #callback(error)
+    console.log "updating nearby sessions to #{locations}"
     recursiveGetAccountsAtLocationArray 0,locations,[], (error, uniqueAccounts)=>
+      console.log "found relevant accounts #{uniqueAccounts.length}"
       activeSessions = []
       uniqueAccounts.forEach (obj, i) =>
         sessionsForAccount = activeSessionsForAccount obj
@@ -303,7 +304,6 @@ swypApp = require('zappa').app ->
         @emit unauthorized: {}
         return
       #implement function to evaluate user token and abort if invalid
-      contentID      = "newSwypID"
       supportedTypes = @data.fileTypes
       previewImage   = @data.previewImage
       recipientTo    = @data.to
@@ -314,9 +314,13 @@ swypApp = require('zappa').app ->
       fileTypesToSave = [] #this is for the datastore
       fileTypesToSend = [] #this is for the swyp-out event
       for type in @data.fileTypes
-         fileTypeObj = new FileType {fileMIME: type.fileMIME, fileURL: type.fileURL} #no upload or completion date or timeouts
-         fileTypesToSave.push fileTypeObj
-         fileTypesToSend.push type.fileMIME
+         fileTypeObj = new FileType {fileMIME: type.fileMIME} #no upload or completion date or timeouts
+         if type.fileURL?
+           console.log "url included #{type.fileURL}"
+           fileTypeObj.fileURL = type.fileURL
+           fileTypeObj.uploadCompletionDate = new Date()
+         fileTypesToSave.push fileTypeObj #this gets saved
+         fileTypesToSend.push type.fileMIME #this gets emitted 
 
       nextSwyp = new Swyp {previewImage: previewImage, swypOuter: fromSender, dateCreated: swypTime, dateExpires: swypExpire, fileTypes: fileTypesToSave}
       console.log nextSwyp
@@ -342,21 +346,47 @@ swypApp = require('zappa').app ->
          from: fromSender, \
          time: swypTime}
       ###
+  
+  swypForID = (id, callback) => #{callback(err, swypObj)}
+    objID = mongoose.mongo.BSONPure.ObjectID.fromString(id)
+    Swyp.findOne {_id: objID}, (err, obj) =>
+      if err? or (obj? == false)
+         callback err, null
+         console.log "no swyp for id #{id} found, w. err #{err}"
+         return
+      if obj?
+        callback null, obj
+  
+  fileTypeFromMIMEInSwyp = (fileMIMEType, swyp) =>
+    for fileT in swyp.fileTypes
+      if fileMIMEType == fileT.fileMIME
+        return fileT
+    return null
+
   @on swypIn: ->
     tokenValidate @data.token, (user, session) =>
       if user == null
         @emit unauthorized: {}
         return
       contentID   = @data.id
-      contentType = @data.type
-      uploadURL   = "http://newUploadURL"
-      @emit dataPending:
-        {id: contentID, \
-         type: contentType}
-      @broadcast dataRequest:
-        {id: contentID, \
-         type: contentType,
-         uploadURL: uploadURL}
+      contentType = @data.fileMIME
+      swypForID contentID, (err, swyp) =>
+        if swyp?
+          fileTypeObj = fileTypeFromMIMEInSwyp contentType, swyp
+          if fileTypeObj.uploadCompletionDate?
+            @emit dataAvailable:
+              {id: contentID, \
+              fileMIME: contentType,\
+              fileURL: fileTypeObj.fileURL}
+          else
+            uploadURL   = "http://newUploadURL"
+            @emit dataPending:
+              {id: contentID, \
+               type: contentType}
+            @broadcast dataRequest:
+              {id: contentID, \
+               type: contentType,
+               uploadURL: uploadURL}
      
   @on uploadCompleted: ->
     tokenValidate @data.token, (user, session) =>

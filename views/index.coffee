@@ -3,7 +3,8 @@
 @scripts = ['/socket.io/socket.io',
             '/zappa/jquery',
             '/zappa/zappa',
-            '/swyp']
+            '/swyp',
+            '/ArraySetMath']
 
 h1 @title
 input id: 'token_input', type: 'text', name: 'token_input', placeholder: 'session token', size: 50, value: 'TOKENBLAH_alex'

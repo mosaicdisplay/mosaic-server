@@ -1,6 +1,6 @@
 @include = ->
   @client '/swyp.js': ->
-   
+    
     #type defs
     imageJPEGType = "image/jpeg"
     imagePNGType = "image/png"
@@ -39,9 +39,9 @@
       if swypObjByID[swypObjID]?
         console.log "swyp in started for #{swypObjID}"
         swypObj = swypObjByID[swypObjID]
-        commonTypes = supportedFileTypes.intersect(swypObj.fileTypes)
+        commonTypes = supportedFileTypes.intersect(swypObj.availableMIMETypes)
         if commonTypes[0]?
-          @emit swypIn: {token: localSessionToken(), id: swypObj.id, fileType:commonTypes[0]}
+          @emit swypIn: {token: localSessionToken(), id: swypObj.id, fileMIME:commonTypes[0]}
         else
           console.log "no common filetypes for swyp"
       else
@@ -89,5 +89,8 @@
     @on updateRequest: ->
       $('body').append "<br />update requested!"
       makeStatusUpdate()
+
+    @on dataAvailable: ->
+      $('body').append "<img src='#{@data.fileURL}' alt='imgID#{@data.id} of type #{@data.fileMIME}'/>"
      
     @connect()
