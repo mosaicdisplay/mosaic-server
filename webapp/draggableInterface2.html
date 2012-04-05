@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+            <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.5/jquery.min.js"></script>
+            <script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8/jquery-ui.min.js"></script>
+            
+            <title>Draggable Interface</title>
+
+			<script language="javascript">
+				
+				function onMouseDown(e){
+					console.log("captured mouse down");
+					captured = e.target;
+					captured.startX = e.clientX - captured.offsetLeft;
+					captured.startY = e.clientY - captured.offsetTop;
+					if (!("mouseMoveHandler" in captured)) {
+						captured.mouseMoveHandler = function(e) { return onMouseMove(e); }
+						captured.mouseUpHandler = function(e) { return onMouseUp(e); }
+					}
+
+					document.addEventListener('mousemove', captured.mouseMoveHandler, true);
+					document.addEventListener('mouseup', captured.mouseUpHandler, true);
+
+					return false;
+				}
+				
+				function onMouseMove(e)
+					{
+						if (e.target != captured)
+							return true;
+						console.log("on mouse move");
+						e.target.style.left = e.clientX - e.target.startX + 'px';
+						e.target.style.top = e.clientY - e.target.startY + 'px';
+						return false;
+					}
+
+				function onMouseUp(e)
+					{
+						console.log("on mouse up");
+						document.removeEventListener('mousemove', e.target.mouseMoveHandler, true);
+						document.removeEventListener('mouseup', e.target.mouseUpHandler, true);
+						return false;
+					}
+			</script>
+            <link rel="stylesheet" href="default.css" type="text/css"/>
+    </head>
+    
+    <body id="parent">
+            <h1 id="dragtitle">Title</h1>
+                <br>
+                <br>
+				
+                <img id="dragout" style="position:absolute;" draggable="true" data-downloadurl="application/jpg:greenapple89.jpg:http://gi0006.photobucket.com/groups/0006/G5PAK3TBQS/greenapple89.jpg" src="http://gi0006.photobucket.com/groups/0006/G5PAK3TBQS/greenapple89.jpg"/>
+		<script>
+		document.getElementById('dragout').addEventListener('mousedown',function(e){ return onMouseDown(e)}, false);
+		</script>
+		
+                <div class="dropzoneNormal" id="dragout2" draggable="true" style="position: relative; background:RGB(220,220,220); margin: 20px; border-radius:8px; width:700px; height:70px; color:RGB(100,100,100); font-size:12px;" class="over" ><p style="position:absolute; top:25%; left:45%;" id="dropstatus">File Drop</p><img id="replaceimg" src=""/></div>
+                <br>
+                <img style="position: relative; draggable="true" src="https://ssl.gstatic.com/ui/v1/icons/mail/logo_black.png"/>
+				
+        <!--div attributes  dropzone="move file:image/jpg" ondrop="dropHandler(event)" -->
+                <style>
+                .over {
+                border: 2px dashed #000;
+                }
+                    
+                .dropzoneNormal{
+                border: solid RGB(180,180,180) 1px; 
+                }
+                </style>
+        <script language="javascript">
+			
+			
+            $(function() {
+
+              $( "#draggablepic").draggable();
+              ////////////////////////////////////////DIV
+              var i = 0;
+              
+              
+              $("#dropstatus").click(function(){$("#dropstatus").html("clicked paragraph");});
+              
+              var i = 0;
+              
+              $("h1").each(function () {
+                           this.setAttribute("id", 'draggableh1'+i.toString());
+                           i++;
+                           });
+              
+              for(var j = 0; j<(i+1);j++){
+              $("#draggableh1"+j.toString()).draggable();
+              }
+              ///////////////////////////////////////para
+              var i = 0;
+              
+
+              
+              for(var j = 0; j<(i+1);j++){
+              $("#draggablep"+j.toString()).draggable();
+              }
+              
+              });
+            
+            var drop = document.getElementById("droparea");
+            
+            function dropHandler(event){
+                $("#dropstatus").html("File Dropped");
+            }
+            
+            
+            //$("div").text($("img").attr("alt"));
+            
+            
+            //var fileDetails = document.getElementById("dragout").getAttribute("data-downloadurl");
+            
+            //document.getElementById("dragout").addEventListener("dragstart",function(evt){evt.dataTransfer.setData("DownloadURL",fileDetails);},false);
+            //var drag = document.querySelectorAll('.dragout');//returns non-live list...danger???
+            //console.log(drag.length);
+            //for(var i=0; i<drag.length; i++){
+            var apple = document.getElementById("dragout");//wouldn't work because returns a value...div's don't have a value 
+            var dropzone = document.getElementById("dragout2");
+            /*
+            apple.addEventListener('dragstart', handleDragStart, false);
+            apple.addEventListener('dragenter', handleDragEnter, false);
+            apple.addEventListener('dragover', handleDragOver, false);
+            apple.addEventListener('dragleave', handleDragLeave, false);
+            apple.addEventListener('drop', handleDrop, false);
+            apple.addEventListener('dragend', handleDragEndZ, false);
+            */
+            dropzone.addEventListener('dragstart', handleDragStart, false);
+            dropzone.addEventListener('dragenter', handleDragEnter, false);
+            dropzone.addEventListener('dragover', handleDragOver, false);
+            dropzone.addEventListener('dragleave', handleDragLeaveZ, false);
+            dropzone.addEventListener('drop', handleDrop, false);
+            dropzone.addEventListener('dragend', handleDragEndZ, false);
+            //             }
+            
+            function handleDragStart(e){
+                e.target.style.opacity=0.4;
+            }
+            
+            function handleDragOver(e) {
+                if (e.preventDefault) {
+                    e.preventDefault();
+                }
+                e.dataTransfer.dropEffect = 'move'; 
+                
+                return false;
+            }
+            
+            function handleDragEnter(e) {
+                this.classList.remove('dropzoneNormal');//should check which element it is first
+                this.classList.add('over');
+                
+            }
+            
+            function handleDragLeave(e) {
+                this.classList.remove('over');  
+            }
+            
+            function handleDragLeaveZ(e) {
+                this.classList.remove('over');  
+                this.classList.add('dropzoneNormal');
+            }
+            
+            function handleDrop(e) {
+                
+                if (e.stopPropagation) {
+                    e.stopPropagation();
+                }
+                
+                //$("#dropstatus").html("File Dropped");
+                    if (!event.dataTransfer) {
+                        alert ("Your browser does not support the dataTransfer object.");
+                        return;
+                    }
+                    
+                    var transferObj = e.dataTransfer;
+                    
+                    var fileList = transferObj.files;
+                console.log(fileList[0]);
+                    var reader = new FileReader();
+                //for(file in fileList){
+                // init the reader event handlers
+                reader.onloadend = function (reader) {  //can specify filter for reader...perhaps not specifying what can be dropped, maybe security
+                    document.getElementById('replaceimg').src=reader.target.result;
+                    //console.log( "hi "+reader.target.result+" bye"); 
+                };
+                
+                // begin the read operation
+                reader.readAsDataURL(fileList[0]);
+                //}
+                this.classList.remove('over');  
+                this.classList.add('dropzoneNormal');
+                return false;
+            }
+            
+            function handleReaderLoad(evt) {
+                //var img = document.getElementById("preview");
+                //img.src = evt.target.result;
+                //document.getElementById('dropstatus').innerHTML=( evt.target.result);
+                console.log("results: "+evt +" event target " +evt.target+" result "+evt.target.result);//event target returns filereader, result should return file data
+            }
+            
+            function handleDragEnd(e) {
+                //[].forEach.call(drag, function (drag) {
+                //                drag.classList.remove('over');
+                //                });     
+                apple.classList.remove('over');
+                dropzone.classList.remove('over');
+            }
+            
+            function handleDragEndZ(e) {
+                //[].forEach.call(drag, function (drag) {
+                //                drag.classList.remove('over');
+                //                });     
+                apple.classList.remove('over');
+                dropzone.classList.remove('over');
+                dropzone.classList.add('dropzoneNormal');
+            }
+            
+            
+            </script>
+    </body>
+    
+</html>
