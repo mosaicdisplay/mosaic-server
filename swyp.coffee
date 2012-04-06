@@ -12,8 +12,8 @@ UserSchema.plugin mongooseAuth, {
       User: -> User
 }
 
-#embedded schema as suggested http://mongoosejs.com/docs/embedded-documents.html
-#   embedded seems to be the only way this works-- I had tried just literally embedding the properties (that didn't)
+#sessions are contained within accounts, and represent an active connection to the swypServer
+#sessions contain the socket.io socket id via 'socketID', and the current location of the user
 Session = new Schema {
   token : String,
   socketID : String,
@@ -21,6 +21,10 @@ Session = new Schema {
   location : [ Number, Number] #long,lat as suggested: http://www.mongodb.org/display/DOCS/Geospatial+Indexing 
 }
 
+#the account schema contains the user information and login credentials
+#the userIDs are unique, and can be universal identifiers (more internal than userName)
+#the userName is the display name for other users to see
+#the account document contains the session embeddedDocument 
 AccountSchema = new Schema {
   userImageURL : String,
   userID : { type: String, index: { unique: true }},
@@ -29,6 +33,8 @@ AccountSchema = new Schema {
   sessions : [Session]
 }
 
+#each contentType the swyp-out supports generates one of these
+#typeGroups are fufilled as necessary to honor requests through swyp-ins
 TypeGroupSchema = new Schema {
   contentURL : String
   contentMIME : String
@@ -37,6 +43,9 @@ TypeGroupSchema = new Schema {
   uploadCompletionDate : Date
 }
 
+# each swyp-out generates one of these
+# it contains typeGroups, which are the various contentTypes supported by a specific swyped-out content
+# swypOuterID corresponds to a unique Account.userID
 SwypSchema = new Schema {
   swypOuterID : String,
   swypRecipientID : String,
@@ -75,19 +84,28 @@ swypApp = require('zappa').app ->
   @io.set("polling duration", 10)
   
   @include 'swypClient'
-
-#this is the new asynchronous method-- for now there's only one hardcoded token in @client code
+  
+  #this method performs a callback with (error, account, activeSessions) w. the relevant account for a userID, as well as associated active sessions
+  accountForUserID = (userID, callback) -> #callback(error, account, activeSessions)
+     Account.find {"userID" : userID}, (err, docs)  =>
+      accountFound = docs[0] ? null
+      if accountFound?
+        activeSessions = activeSessionsForAccount(accountFound)
+        callback null, accountFound, activeSessions
+      else
+        callback err, null, null
+#this method asynchronously evaluates the validity of an Account session
   tokenValidate = (token, callback) ->
-    userFound = null
+    accountFound = null
     session = null
     Account.find {"sessions.token" : token}, (err, docs)  =>
-      userFound = docs[0] ? null
-      if userFound != null
-        userFound.sessions.forEach (obj, i) ->
+      accountFound = docs[0] ? null
+      if accountFound != null
+        accountFound.sessions.forEach (obj, i) ->
           if obj.token == token
             session = obj
-      callback userFound, session
-#      console.log "found user #{userFound} for session #{session} andtoken #{token}"
+      callback accountFound, session
+#      console.log "found user #{accountFound} for session #{session} andtoken #{token}"
 
 # checkyourselfbeforeyouwreckyourself.... asynchronous recersion, yo.
   recursiveGetAccountsAtLocationArray = (index, locationsArray, uniqueAccounts, callback) => #recursive function #callback(error, uniqueAccounts)
@@ -176,7 +194,8 @@ swypApp = require('zappa').app ->
       console.log "session no socket #{session.socketID}"
       return null
   
-  activeSessionsForAccount = (account) => #callback([Session])
+  #grabs the active sessions for an accout, and returns in-line
+  activeSessionsForAccount = (account) =>
     activeSessions = []
     if account.sessions?
       account.sessions.forEach (obj, i) =>
@@ -380,10 +399,10 @@ swypApp = require('zappa').app ->
         return type
     return null
 
-###
-The @on swypIn event triggers from client's swypIn-action.
-The client passes its requested contentMIME, and this server either immediately emits the contentURL at which the content of contentMIME is available, or it requests the upload of said MIME to a specific URL given by this server.
-###
+  ###
+  The @on swypIn event triggers from client's swypIn-action.
+  The client passes its requested contentMIME, and this server either immediately emits the contentURL at which the content of contentMIME is available, or it requests the upload of said MIME to a specific URL given by this server.
+  ###
   @on swypIn: ->
     tokenValidate @data.token, (user, session) =>
       if user == null
