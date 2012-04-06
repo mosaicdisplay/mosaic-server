@@ -29,9 +29,9 @@ AccountSchema = new Schema {
   sessions : [Session]
 }
 
-FileTypeSchema = new Schema {
-  fileURL : String
-  fileMIME : String
+TypeGroupSchema = new Schema {
+  contentURL : String
+  contentMIME : String
   requestingUserIDs : [String]
   uploadTimeoutDate : Date
   uploadCompletionDate : Date
@@ -43,14 +43,14 @@ SwypSchema = new Schema {
   dateCreated : Date,
   dateExpires : Date,
   previewImageJPG : String,
-  fileTypes : [FileType]
+  typeGroups : [TypeGroup]
 }
 
 ###
 Swyp Schema -- Determine whether embedded in session, or seperate
 • Swyps created on swypOut event
 • Swyps stored track:
-  - fileTypes [array of hashtables]
+  - typeGroups [array of hashtables]
     - URL location
     - Requesting userIDs
   - swyp-out ownerID
@@ -60,7 +60,7 @@ Swyp Schema -- Determine whether embedded in session, or seperate
 
 Account = mongoose.model 'Account', AccountSchema
 Swyp = mongoose.model 'Swyp', SwypSchema
-FileType = mongoose.model 'Swyp.fileTypes', FileTypeSchema
+TypeGroup = mongoose.model 'Swyp.typeGroups', TypeGroupSchema
 `Array.prototype.unique = function() {    var o = {}, i, l = this.length, r = [];    for(i=0; i<l;i+=1) o[this[i]] = this[i];    for(i in o) r.push(o[i]);    return r;};`
 
 swypApp = require('zappa').app ->
@@ -317,31 +317,35 @@ swypApp = require('zappa').app ->
         @emit unauthorized: {}
         return
       #implement function to evaluate user token and abort if invalid
-      supportedTypes = @data.fileTypes
+      supportedTypes = @data.typeGroups
       previewImage   = @data.previewImage
       recipientTo    = @data.to
       fromSender     = user.userID
       swypTime       = new Date()
       swypExpire = new Date(new Date().valueOf()+50) #expires in 50 seconds
      
-      fileTypesToSave = [] #this is for the datastore
-      fileTypesToSend = [] #this is for the swyp-out event
-      for type in @data.fileTypes
-         fileTypeObj = new FileType {fileMIME: type.fileMIME} #no upload or completion date or timeouts
-         if type.fileURL?
-           console.log "url included #{type.fileURL}"
-           fileTypeObj.fileURL = type.fileURL
-           fileTypeObj.uploadCompletionDate = new Date()
-         fileTypesToSave.push fileTypeObj #this gets saved
-         fileTypesToSend.push type.fileMIME #this gets emitted 
+      typeGroupsToSave = [] #this is for the datastore
+      typeGroupsToSend = [] #this is for the swyp-out event
+      if @data.typeGroups? == false
+        console.log "swypOut had bad typeGroupStructure"
+        @emit badData: {}
+        return
+      for type in @data.typeGroups
+         typeGroupObj = new TypeGroup {contentMIME: type.contentMIME} #no upload or completion date or timeouts
+         if type.contentURL?
+           console.log "url included #{type.contentURL}"
+           typeGroupObj.contentURL = type.contentURL
+           typeGroupObj.uploadCompletionDate = new Date()
+         typeGroupsToSave.push typeGroupObj #this gets saved
+         typeGroupsToSend.push type.contentMIME #this gets emitted 
 
-      nextSwyp = new Swyp {previewImage: previewImage, swypOuter: fromSender, dateCreated: swypTime, dateExpires: swypExpire, fileTypes: fileTypesToSave}
+      nextSwyp = new Swyp {previewImage: previewImage, swypOuter: fromSender, dateCreated: swypTime, dateExpires: swypExpire, typeGroups: typeGroupsToSave}
       console.log nextSwyp
       nextSwyp.save (error) =>
         if error != null
           console.log "didFailSave", error
           return
-        swypOutPacket = {id: nextSwyp._id, swypOuter: nextSwyp.swypOuter, dateCreated: nextSwyp.dateCreated, dateExpires: nextSwyp.dateExpires, availableMIMETypes: fileTypesToSend}
+        swypOutPacket = {id: nextSwyp._id, swypOuter: nextSwyp.swypOuter, dateCreated: nextSwyp.dateCreated, dateExpires: nextSwyp.dateExpires, availableMIMETypes: typeGroupsToSend}
         @emit swypOutPending: swypOutPacket #this sends only the MIMES
         console.log "new swypOut saved"
         accountsAndSessionsNearLocation session.location, (sessionsByAccount, allSessions) =>
@@ -354,7 +358,7 @@ swypApp = require('zappa').app ->
       ###
       @broadcast swypInAvailable:
          {id: contentID, \
-         fileTypes: supportedTypes,\
+         typeGroups: supportedTypes,\
          preview: previewImage,\
          from: fromSender, \
          time: swypTime}
@@ -370,27 +374,31 @@ swypApp = require('zappa').app ->
       if obj?
         callback null, obj
   
-  fileTypeFromMIMEInSwyp = (fileMIMEType, swyp) =>
-    for fileT in swyp.fileTypes
-      if fileMIMEType == fileT.fileMIME
-        return fileT
+  typeGroupFromMIMEInSwyp = (contentMIMEType, swyp) =>
+    for type in swyp.typeGroups
+      if contentMIMEType == type.contentMIME
+        return type
     return null
 
+###
+The @on swypIn event triggers from client's swypIn-action.
+The client passes its requested contentMIME, and this server either immediately emits the contentURL at which the content of contentMIME is available, or it requests the upload of said MIME to a specific URL given by this server.
+###
   @on swypIn: ->
     tokenValidate @data.token, (user, session) =>
       if user == null
         @emit unauthorized: {}
         return
       contentID   = @data.id
-      contentType = @data.fileMIME
+      contentType = @data.contentMIME
       swypForID contentID, (err, swyp) =>
         if swyp?
-          fileTypeObj = fileTypeFromMIMEInSwyp contentType, swyp
-          if fileTypeObj.uploadCompletionDate?
+          typeGroupObj = typeGroupFromMIMEInSwyp contentType, swyp
+          if typeGroupObj? && typeGroupObj.uploadCompletionDate?
             @emit dataAvailable:
               {id: contentID, \
-              fileMIME: contentType,\
-              fileURL: fileTypeObj.fileURL}
+              contentMIME: contentType,\
+              contentURL: typeGroupObj.contentURL}
           else
             uploadURL   = "http://newUploadURL"
             @emit dataPending:

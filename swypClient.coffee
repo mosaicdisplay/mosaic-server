@@ -8,7 +8,7 @@
     swypObjByID = []
     userLocation = [44.680997,10.317557] # a lng/lat pair
 
-    supportedFileTypes = [imageJPEGType, imagePNGType] #in order of preference more->less
+    supportedContentTypes = [imageJPEGType, imagePNGType] #in order of preference more->less
 
     setLocation = (pos)->
       console.log "updated location"
@@ -27,16 +27,16 @@
     $ =>
       $('#swypOut_button').click (e) =>
        pngFile = {
-          fileURL : "http://swyp.us/guide/setupPhotos/setup1.png"
-          fileMIME : imagePNGType
+          contentURL : "http://swyp.us/guide/setupPhotos/setup1.png"
+          contentMIME : imagePNGType
         }
 
        jpegFile = {
-          fileURL : "http://fluid.media.mit.edu/people/natan/media/swyp/swyp.jpg"
-          fileMIME : imageJPEGType
+          contentURL : "http://fluid.media.mit.edu/people/natan/media/swyp/swyp.jpg"
+          contentMIME : imageJPEGType
         }
 
-        @emit swypOut: {token: localSessionToken(), previewImage: "NONE!", fileTypes: [pngFile, jpegFile]}
+        @emit swypOut: {token: localSessionToken(), previewImage: "NONE!", typeGroups: [pngFile, jpegFile]}
  
       $("#statusupdate_button").click ->
         makeStatusUpdate()
@@ -48,9 +48,9 @@
       if swypObjByID[swypObjID]?
         console.log "swyp in started for #{swypObjID}"
         swypObj = swypObjByID[swypObjID]
-        commonTypes = supportedFileTypes.intersect(swypObj.availableMIMETypes)
+        commonTypes = supportedContentTypes.intersect(swypObj.availableMIMETypes)
         if commonTypes[0]?
-          @emit swypIn: {token: localSessionToken(), id: swypObj.id, fileMIME:commonTypes[0]}
+          @emit swypIn: {token: localSessionToken(), id: swypObj.id, contentMIME:commonTypes[0]}
         else
           console.log "no common filetypes for swyp"
       else
@@ -89,6 +89,6 @@
       makeStatusUpdate()
 
     @on dataAvailable: ->
-      $('body').append "<img src='#{@data.fileURL}' alt='imgID#{@data.id} of type #{@data.fileMIME}'/>"
+      $('body').append "<img src='#{@data.contentURL}' alt='imgID#{@data.id} of type #{@data.contentMIME}'/>"
      
     @connect()
