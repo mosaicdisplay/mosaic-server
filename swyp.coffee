@@ -1,5 +1,16 @@
 mongoose     = require('mongoose')
+mongooseAuth = require('mongoose-auth')
 Schema = mongoose.Schema
+
+ObjectId = mongoose.SchemaTypes.ObjectId
+User = null
+
+UserSchema = new Schema {}
+UserSchema.plugin mongooseAuth, {
+  everymodule:
+    everyauth:
+      User: -> User
+}
 
 #embedded schema as suggested http://mongoosejs.com/docs/embedded-documents.html
 #   embedded seems to be the only way this works-- I had tried just literally embedding the properties (that didn't)
