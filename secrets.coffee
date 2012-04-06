@@ -7,4 +7,3 @@
   @mongoDBConnectURLSecret = 'mongodb://swypmain:&87YMvvwr%E6Wmy@ds031587.mongolab.com:31587/heroku_app3235025'
 
   @sessionSecret = 'gesturalsensationS2122dss1324$%'
-
