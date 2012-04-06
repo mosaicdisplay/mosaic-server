@@ -77,7 +77,7 @@ swypApp = require('zappa').app ->
   #@mongoDBConnectURLSecret =  "mongodb://..."
   mongoose.connect(@mongoDBConnectURLSecret)
 
-  @use 'bodyParser', 'static', 'cookieParser', session: {secret: @sessionSecret}
+  @use 'bodyParser', 'static', 'cookies', 'cookieParser', session: {secret: @sessionSecret}
   @enable 'default layout' # this is hella convenient
 
   @io.set("transports", ["xhr-polling"])
@@ -127,9 +127,9 @@ swypApp = require('zappa').app ->
 
 # here we iterate over all active sessions near the old and new location of a session, then we update each session with its relevant nearby users
   updateUniqueActiveSessionsNearLocationArray = (locations, callback) => #callback(error)
-    console.log "updating nearby sessions to #{locations}"
+    #console.log "updating nearby sessions to #{locations}"
     recursiveGetAccountsAtLocationArray 0,locations,[], (error, uniqueAccounts)=>
-      console.log "found relevant accounts #{uniqueAccounts.length}"
+      #console.log "found relevant accounts #{uniqueAccounts.length}"
       activeSessions = []
       uniqueAccounts.forEach (obj, i) =>
         sessionsForAccount = activeSessionsForAccount obj
@@ -139,7 +139,7 @@ swypApp = require('zappa').app ->
         relevantAccountsNearSession (session), (relevantUpdate, theSession) =>
           socket = socketForSession(theSession)
           if socket? && relevantUpdate?
-            console.log "nearbyrefreshing for sessionID #{theSession.socketID}"
+            #console.log "nearbyrefreshing for sessionID #{theSession.socketID}"
             socket.emit('nearbyRefresh', relevantUpdate)
 
   accountsAndSessionsNearLocation = (location, callback) -> #callback([{sessions:[Session], account: Account}], allSessions)
@@ -160,12 +160,12 @@ swypApp = require('zappa').app ->
   
   accountOwnsSession = (account, session) ->
     for ses in account.sessions
-      if ses._id == session._id
+      if ses.token == session.token
         return true
     return false
    
   relevantAccountsNearSession = (session, callback) -> #callback([{sessions:[Session], account: Account}], theSession)
-    Account.find {"sessions.location" : { $nearSphere : session.location, $maxDistance : 1/6378  }}, {userName: 1, userImageURL: 1, sessions: 1} , (err, docs) =>
+    Account.find {"sessions.location" : { $nearSphere : session.location, $maxDistance : 1/6378  }}, (err, docs) =>
       if err?
          console.log "error on session location lookup #{err}"
          return
@@ -173,18 +173,23 @@ swypApp = require('zappa').app ->
         relevantAccounts = []
         for acc in docs
           if accountOwnsSession acc, session
+            #console.log "acc #{acc.userID} owns session with token #{session.token}"
             sessionsForAccount = activeSessionsForAccount acc
             #if more than one active session for the current account, then good!
             if sessionsForAccount[1]?
               relevantAccounts.push acc
             else
-              console.log "current user w. session #{session.socketID} ignored bcuz only 1 session"
+             #console.log "current user w. session #{session.socketID} ignored bcuz only 1 session"
           else
+            #console.log "acc #{acc.userID} does not own session with token #{session.token}"
             relevantAccounts.push acc
         #don't need to send session details to every client, we don't save, so this is NBD
+        shareAccounts = []
         for acc in relevantAccounts
-          acc.sessions = undefined
-        sendVal = {nearby: relevantAccounts}
+          shareAccounts.push {userID: acc.userID, userImageURL: acc.userImageURL}
+       
+        #console.log "sessionToken #{session.token} gets accounts :"
+        sendVal = {nearby: shareAccounts}
         callback sendVal, session
     
   socketForSession = (session) =>
@@ -241,6 +246,8 @@ swypApp = require('zappa').app ->
     reqPassword = req.body.user_pass
     fbId = req.body.fb_uid
     fbToken = req.body.fb_token
+    console.log @request.cookies
+    @response.clearCookie 'sessiontoken'
 
     Account.find {userName: reqName}, (err, docs)  =>
       matchingUser = docs[0]
@@ -266,10 +273,12 @@ swypApp = require('zappa').app ->
             if error != null
               console.log "didFailSave", error
           console.log "create new session success for", matchingUser.userName
+
+          @response.cookie 'sessiontoken', newToken, { maxAge: 900000 }
           @render login: {userID: matchingUser.userID, token: session.token}
         else
           previousSession = matchingUser.sessions[0]
-          console.log previousSession
+          @response.cookie 'sessiontoken', previousSession.token, { maxAge: 900000 }
           @render login: {userID: matchingUser.userID, token: previousSession.token}
 
   @get '/token': ->
@@ -305,13 +314,16 @@ swypApp = require('zappa').app ->
         'Link account with Facebook'
 
   @get '/': ->
-    @render index: {}
+    sessionToken = null
+    if @request.cookies.sessiontoken?
+      sessionToken = @request.cookies.sessiontoken
+    @render index: {token: sessionToken}
+    console.log "resuming session of token #{sessionToken}"
 
   @on connection: ->
     @emit updateRequest: {time: new Date()}
   
   @on statusUpdate: ->
-    console.log "statusUpate"
     tokenValidate @data.token, (user, session) =>
       if user == null
         @emit unauthorized: {}
