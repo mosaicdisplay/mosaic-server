@@ -28,4 +28,5 @@ aho.xcuserdatad
 alist.xcuserdatad
 
 #swyp specific
-*.js
+swyp.js
+swypClient.js
