@@ -13,11 +13,11 @@
     setLocation = (pos)->
       console.log "updated location"
       userLocation = [pos.coords.longitude, pos.coords.latitude]
-      makeStatusUpdate();
+      makeStatusUpdate()
 
     if navigator.geolocation
       # no error handling for now
-      navigator.geolocation.watchPosition(setLocation, null);
+      navigator.geolocation.watchPosition(setLocation, null)
 
     $('document').ready ->
       $('#logout').click (e)->

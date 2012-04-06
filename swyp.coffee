@@ -61,12 +61,14 @@ Swyp Schema -- Determine whether embedded in session, or seperate
 Account = mongoose.model 'Account', AccountSchema
 Swyp = mongoose.model 'Swyp', SwypSchema
 FileType = mongoose.model 'Swyp.fileTypes', FileTypeSchema
-mongoose.connect('mongodb://swyp:mongo4swyp2012@ds031587.mongolab.com:31587/heroku_app3235025')
-
 `Array.prototype.unique = function() {    var o = {}, i, l = this.length, r = [];    for(i=0; i<l;i+=1) o[this[i]] = this[i];    for(i in o) r.push(o[i]);    return r;};`
 
 swypApp = require('zappa').app ->
-  @use 'bodyParser', 'static', 'cookieParser', session: {secret: 'gesturalsensation'}
+  @include 'secrets'
+  #@mongoDBConnectURLSecret =  "mongodb://..."
+  mongoose.connect(@mongoDBConnectURLSecret)
+
+  @use 'bodyParser', 'static', 'cookieParser', session: {secret: @sessionSecret}
   @enable 'default layout' # this is hella convenient
 
   @io.set("transports", ["xhr-polling"])
@@ -195,7 +197,7 @@ swypApp = require('zappa').app ->
           console.log newAccount
           @render signup: {user_name: userName}
         else
-          console.log "signup success for", userName
+          console.log "signup success for", uSerName
           @redirect '/token'
     else
       @render signup: {user_name: userName}
