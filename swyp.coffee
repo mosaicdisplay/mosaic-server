@@ -292,6 +292,9 @@ swypApp = require('zappa').app ->
   
   @get '/login': ->
     @render login: {}
+  
+  @get '/token': ->
+    @redirect '/login'
 
   @post '/token', (req, res) ->
     reqName  = req.body.user_name
