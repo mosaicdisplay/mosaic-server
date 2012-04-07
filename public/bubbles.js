@@ -58,7 +58,7 @@
   checkForCollisions = function(ex, ey) {
     var collisionCount;
     collisionCount = 0;
-    node.each(function(d, i) {
+    swyp.node.each(function(d, i) {
       var collision;
       collision = collides(this, ex, ey);
       if (collision) collisionCount += 1;
@@ -102,11 +102,10 @@
       d3.event.preventDefault();
       d3.event.stopPropagation();
       xy = realTouches(bod);
-      console.log(xy);
       return swyp.showBubblesAt(xy[0], xy[1]);
     }).on(events[1], function(e) {
       var xy;
-      if (this.isVisible) {
+      if (swyp.isVisible) {
         xy = realTouches(this);
         $("#preview").show();
         positionPreview(xy[0], xy[1]);
@@ -183,13 +182,13 @@
     });
   };
 
-  $(function() {
-    window.addEventListener("message", swyp.receiveMessage, false);
+  swyp.initialize = function(json) {
+    window.addEventListener("message", this.receiveMessage, false);
     $("#instructions").text(instructions["default"]);
-    return d3.json("graph.json", function(json) {
-      swyp.setupBubbles(json);
-      return swyp.registerEvents();
-    });
-  });
+    this.setupBubbles(json);
+    return this.registerEvents();
+  };
+
+  window.swypClient = swyp;
 
 }).call(this);

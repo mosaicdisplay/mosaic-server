@@ -39,7 +39,7 @@ friendClass = (d) -> if d.friend then "friend" else "stranger"
 # see if mouse/finger drag collides with a person bubble
 checkForCollisions = (ex, ey) ->
   collisionCount = 0
-  node.each (d, i) ->
+  swyp.node.each (d, i) ->
     collision = collides(this, ex, ey)
     collisionCount += 1 if collision
     d3.select(this).attr "class", (if collision then "hovered" else friendClass(d))
@@ -78,11 +78,10 @@ swyp.registerEvents = ->
     d3.event.preventDefault()
     d3.event.stopPropagation()
     xy = realTouches(bod)
-    console.log xy
     swyp.showBubblesAt xy[0], xy[1]
   ).on(events[1], (e) ->
     # only handle mouse moves if bubbles are visible
-    if @isVisible
+    if swyp.isVisible
       xy = realTouches(this)
       $("#preview").show()
       positionPreview xy[0], xy[1]
@@ -160,10 +159,10 @@ swyp.setupBubbles = (json)->
         d.y = if @y then d.y + (@y - d.y) * (damper + 0.71) * e.alpha else 400
       "translate(#{d.x},#{d.y})"
 
-$ ->
-  window.addEventListener "message", swyp.receiveMessage, false
+swyp.initialize = (json)->
+  window.addEventListener "message", @receiveMessage, false
   $("#instructions").text instructions["default"]
-  
-  d3.json "graph.json", (json) ->
-    swyp.setupBubbles json
-    swyp.registerEvents()
+  @setupBubbles json
+  @registerEvents()
+
+window.swypClient = swyp
