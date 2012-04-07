@@ -44,7 +44,7 @@
     localSessionToken = =>
       return $("#token_input").val()
    
-    #the client makes a swyp in, using the to: property if they wish to specifiy it to a specifc account.userID
+    #the client makes a swyp in, using the to: property if they wish to specifiy it to a specifc account._id
     makeSwypIn = (swypObjID) =>
       if swypObjByID[swypObjID]?
         console.log "swyp in started for #{swypObjID}"
@@ -62,9 +62,9 @@
  
     @on swypInAvailable: ->
       console.log @data
-      swypObjByID[@data.id] = @data #{dateCreated: @data.dateCreated, id: @data.id, swypOuter: @data.swypOuter, availableMimeTypes: @data.availableMIMETypes}
+      swypObjByID[@data.id] = @data #{dateCreated: @data.dateCreated, id: @data.id, swypSender: @data.swypSender, availableMimeTypes: @data.availableMIMETypes}
       console.log "swyp in available #{@data.id}"
-      $('body').append "<br /> @ #{@data.dateCreated} swypIn avail w.ID #{@data.id} from #{@data.swypOuter} with types: #{@data.availableMIMETypes}"
+      $('body').append "<br /> @ #{@data.dateCreated} swypIn avail w.ID #{@data.id} from #{@data.swypSender} with types: #{@data.availableMIMETypes} <img src='#{@data.swypSender.userImageURL}' />"
       $('body').append "<input id= 'button_#{@data.id}', type= 'button', value='swyp in!'>"
       $("#button_#{@data.id}").bind 'click', =>
           makeSwypIn(@data.id)
