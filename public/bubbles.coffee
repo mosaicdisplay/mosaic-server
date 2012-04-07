@@ -41,7 +41,7 @@ checkForCollisions = (ex, ey) ->
   collisionCount = 0
   node.each (d, i) ->
     collision = collides(this, ex, ey)
-    collisionCount += 1  if collision
+    collisionCount += 1 if collision
     d3.select(this).attr "class", (if collision then "hovered" else friendClass(d))
   # update the instructions if dragging over a person
   $("#instructions").text instructions[(if (collisionCount > 0) then "drop" else "default")]
@@ -134,7 +134,7 @@ setupBubbles = ->
     # the user avatar
     node.append("svg:image")
         .attr("class", "circle")
-        .attr("xlink:href", (d) -> d.picture)
+        .attr("xlink:href", (d) -> d.userImageURL)
         .attr("x", "-16px")
         .attr("y", "-20px")
         .attr("width", "40px")
@@ -143,7 +143,7 @@ setupBubbles = ->
     node.append("svg:text")
         .attr("class", "nodetext")
         .attr("dx", 32)
-        .attr("dy", ".35em").text (d) -> d.name
+        .attr("dy", ".35em").text (d) -> d.userName
 
     force.on "tick", (e) ->
       resize()

@@ -161,10 +161,10 @@
         return i !== 0;
       }).append("svg:rect").attr("class", "rect").attr("x", "-16px").attr("y", "-20px").attr("width", "200px").attr("height", "40px");
       node.append("svg:image").attr("class", "circle").attr("xlink:href", function(d) {
-        return d.picture;
+        return d.userImageURL;
       }).attr("x", "-16px").attr("y", "-20px").attr("width", "40px").attr("height", "40px");
       node.append("svg:text").attr("class", "nodetext").attr("dx", 32).attr("dy", ".35em").text(function(d) {
-        return d.name;
+        return d.userName;
       });
       return force.on("tick", function(e) {
         resize();
