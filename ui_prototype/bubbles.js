@@ -29,8 +29,8 @@
     sourceWindow = event.source;
     eType = event.data.e;
     touches = event.data.touches;
-    ex = touches[0];
-    ey = touches[1];
+    ex = touches[0] - 100;
+    ey = touches[1] - 100;
     console.log(eType);
     if (eType === "dragstart") {
       console.log("show bubbles");

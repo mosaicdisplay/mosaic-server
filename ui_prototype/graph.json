@@ -1,14 +1,14 @@
 {
-	"nodes":[
-		{"name":"","group":1,"picture":"http://graph.facebook.com/sherbondy/picture", "friend":true},
-		{"name":"Napoleon","group":1,"picture":"http://graph.facebook.com/sherbondy/picture", "friend":false},
-		{"name":"Mlle.Baptistine","group":1,"picture":"http://graph.facebook.com/sherbondy/picture", "friend":false},
-		{"name":"Mme.Magloire","group":1,"picture":"http://graph.facebook.com/sherbondy/picture", "friend":true},
-	  {"name":"CountessdeLo","group":1,"picture":"http://graph.facebook.com/sherbondy/picture", "friend":false}],
- 	"links":[
-		{"source":1,"target":0},
-		{"source":2,"target":0},
-		{"source":3,"target":0},
-		{"source":3,"target":0},
-		{"source":4,"target":0}]
+  "nodes":[
+    {"name":"","group":1,"picture":"", "friend":true},
+    {"name":"Napoleon","group":1,"picture":"http://graph.facebook.com/sherbondy/picture", "friend":false},
+    {"name":"Mlle.Baptistine","group":1,"picture":"http://graph.facebook.com/sherbondy/picture", "friend":false},
+    {"name":"Mme.Magloire","group":1,"picture":"http://graph.facebook.com/sherbondy/picture", "friend":true},
+    {"name":"CountessdeLo","group":1,"picture":"http://graph.facebook.com/sherbondy/picture", "friend":false}],
+  "links":[
+    {"source":1,"target":0},
+    {"source":2,"target":0},
+    {"source":3,"target":0},
+    {"source":3,"target":0},
+    {"source":4,"target":0}]
 }

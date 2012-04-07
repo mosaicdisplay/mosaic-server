@@ -16,9 +16,10 @@ receiveMessage = (event) ->
   sourceWindow = event.source
   eType = event.data.e
   touches = event.data.touches
-  ex = touches[0]
-  ey = touches[1]
+  ex = touches[0] - 100
+  ey = touches[1] - 100
   console.log eType
+
   if eType is "dragstart"
     console.log "show bubbles"
     positionPreview ex, ey
@@ -27,7 +28,7 @@ receiveMessage = (event) ->
 
 instructions =
   default: "Drag the content onto the person you want to send it to."
-  drop: "Drop to send."
+  drop:    "Drop to send."
   sending: "Sending now..."
 
 is_touch_device = "ontouchstart" of document.documentElement
@@ -111,7 +112,7 @@ d3.json "graph.json", (json) ->
       .attr("y2", (d) -> d.target.y)
 
   node = vis.selectAll("g.node").data(json.nodes).enter()
-            .append("svg:g").attr("class", (d) -> friend_class)
+    .append("svg:g").attr("class", (d) -> friend_class)
 
   node.filter((d, i) -> i isnt 0)
     .append("svg:rect")
