@@ -37,8 +37,7 @@
     
     <span class="nv">localSessionToken = </span><span class="o">=&gt;</span>
       <span class="k">return</span> <span class="nx">$</span><span class="p">(</span><span class="s">&quot;</span><span class="err">#</span><span class="s">token_input&quot;</span><span class="p">).</span><span class="nx">val</span><span class="p">()</span>
-    
-    <span class="nv">makeSwypIn = </span><span class="p">(</span><span class="nx">swypObjID</span><span class="p">)</span> <span class="o">=&gt;</span>
+   </pre></div>             </td>           </tr>                               <tr id="section-5">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-5">&#182;</a>               </div>               <p>the client makes a swyp in, using the to: property if they wish to specifiy it to a specifc account.userID</p>             </td>             <td class="code">               <div class="highlight"><pre>    <span class="nv">makeSwypIn = </span><span class="p">(</span><span class="nx">swypObjID</span><span class="p">)</span> <span class="o">=&gt;</span>
       <span class="k">if</span> <span class="nx">swypObjByID</span><span class="p">[</span><span class="nx">swypObjID</span><span class="p">]</span><span class="o">?</span>
         <span class="nx">console</span><span class="p">.</span><span class="nx">log</span> <span class="s">&quot;swyp in started for </span><span class="si">#{</span><span class="nx">swypObjID</span><span class="si">}</span><span class="s">&quot;</span>
         <span class="nv">swypObj = </span><span class="nx">swypObjByID</span><span class="p">[</span><span class="nx">swypObjID</span><span class="p">]</span>

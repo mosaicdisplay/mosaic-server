@@ -397,22 +397,26 @@ swypApp = require('zappa').app ->
         swypOutPacket = {id: nextSwyp._id, swypOuter: nextSwyp.swypOuter, dateCreated: nextSwyp.dateCreated, dateExpires: nextSwyp.dateExpires, availableMIMETypes: typeGroupsToSend}
         @emit swypOutPending: swypOutPacket #this sends only the MIMES
         console.log "new swypOut saved"
-        accountsAndSessionsNearLocation session.location, (sessionsByAccount, allSessions) =>
-          for toUpdateSession in allSessions
-            socket = socketForSession(toUpdateSession)
-            if socket? && toUpdateSession.socketID != session.socketID
-               console.log "updating swypout for sessionID #{toUpdateSession.socketID}"
-               socket.emit('swypInAvailable', swypOutPacket)
-      #will limit to nearby users later
-      ###
-      @broadcast swypInAvailable:
-         {id: contentID, \
-         typeGroups: supportedTypes,\
-         preview: previewImage,\
-         from: fromSender, \
-         time: swypTime}
-      ###
-  
+        #if no target recpient, you're swyping to area/'room'
+        if recipientTo? == false
+          accountsAndSessionsNearLocation session.location, (sessionsByAccount, allSessions) =>
+             if allSessions?
+              for updateSession in allSessions
+                socket = socketForSession(updateSession)
+                if socket? && updateSession.socketID != session.socketID
+                   console.log "updating swypout for sessionID #{updateSession.socketID}"
+                   socket.emit('swypInAvailable', swypOutPacket)
+        else
+          console.log "swypOut targetted to #{recipientTo}"
+          #otherwise, there is a target recipient
+          accountForUserID recipientTo, (error,account, activeSessions) =>
+            if activeSessions?
+              for updateSession in activeSessions
+                socket = socketForSession(updateSession)
+                if socket? && updateSession.socketID != session.socketID
+                   console.log "updating swypout for sessionID #{updateSession.socketID}"
+                   socket.emit('swypInAvailable', swypOutPacket)
+
   swypForID = (id, callback) => #{callback(err, swypObj)}
     objID = mongoose.mongo.BSONPure.ObjectID.fromString(id)
     Swyp.findOne {_id: objID}, (err, obj) =>

@@ -43,7 +43,8 @@
     
     localSessionToken = =>
       return $("#token_input").val()
-    
+   
+    #the client makes a swyp in, using the to: property if they wish to specifiy it to a specifc account.userID
     makeSwypIn = (swypObjID) =>
       if swypObjByID[swypObjID]?
         console.log "swyp in started for #{swypObjID}"
