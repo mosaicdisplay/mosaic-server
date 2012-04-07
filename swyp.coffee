@@ -94,6 +94,9 @@ swypApp = require('zappa').app ->
   
   @include 'swypClient'
   
+  process.on 'uncaughtException', (err) =>
+    console.log "uncaught exception #{err} not terminating app"
+
   #this method performs a callback with (error, account, activeSessions) w. the relevant account for a publicUserID, as well as associated active sessions
   #public user id is the user._id for a user, which does not disclose their external credentials
   accountForPublicUserID = (publicID, callback) -> #callback(error, account, activeSessions)

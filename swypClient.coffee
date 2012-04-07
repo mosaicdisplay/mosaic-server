@@ -35,8 +35,10 @@
           contentURL : "http://fluid.media.mit.edu/people/natan/media/swyp/swyp.jpg"
           contentMIME : imageJPEGType
         }
-
-        @emit swypOut: {token: localSessionToken(), previewImage: "NONE!", typeGroups: [pngFile, jpegFile]}
+        
+        toRecipient = $("#recipient_input").val().trim()
+        console.log "swyp goes to recip #{toRecipient}"
+        @emit swypOut: {token: localSessionToken(), to: toRecipient, previewImage: "NONE!", typeGroups: [pngFile, jpegFile]}
  
       $("#statusupdate_button").click ->
         makeStatusUpdate()
