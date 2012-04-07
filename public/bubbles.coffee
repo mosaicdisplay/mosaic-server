@@ -105,63 +105,64 @@ receiveMessage = (event) ->
     showBubblesAt ex, ey
 
 # setup the bubbles
-setupBubbles = ->
+setupBubbles = (json)->
   body = d3.select("body")
   vis = body.append("svg:svg").attr("class", "hidden")
 
-  d3.json "graph.json", (json) ->
-    force.nodes(json.nodes).links(json.links).gravity(0)
-         .distance(100).charge(-1000).start()
+  force.nodes(json.nodes).links(json.links).gravity(0)
+       .distance(100).charge(-1000).start()
 
-    link = vis.selectAll("line.link").data(json.links).enter()
-      .append("svg:line")
-        .attr("class", "link")
-        .attr("x1", (d) -> d.source.x)
+  link = vis.selectAll("line.link").data(json.links).enter()
+    .append("svg:line")
+      .attr("class", "link")
+      .attr("x1", (d) -> d.source.x)
+      .attr("y1", (d) -> d.source.y)
+      .attr("x2", (d) -> d.target.x)
+      .attr("y2", (d) -> d.target.y)
+
+  node = vis.selectAll("g.node").data(json.nodes).enter()
+    .append("svg:g").attr("class", (d) -> friendClass)
+
+  node.filter((d, i) -> i isnt 0)
+    .append("svg:rect")
+      .attr("class", "rect")
+      .attr("x", "-16px")
+      .attr("y", "-20px")
+      .attr("width", "200px")
+      .attr("height", "40px")
+  # the user avatar
+  node.append("svg:image")
+      .attr("class", "circle")
+      .attr("xlink:href", (d) -> d.userImageURL)
+      .attr("x", "-16px")
+      .attr("y", "-20px")
+      .attr("width", "40px")
+      .attr("height", "40px")
+  # the user name
+  node.append("svg:text")
+      .attr("class", "nodetext")
+      .attr("dx", 32)
+      .attr("dy", ".35em").text (d) -> d.userName
+
+  force.on "tick", (e) ->
+    resize()
+    link.attr("x1", (d) -> d.source.x)
         .attr("y1", (d) -> d.source.y)
         .attr("x2", (d) -> d.target.x)
         .attr("y2", (d) -> d.target.y)
 
-    node = vis.selectAll("g.node").data(json.nodes).enter()
-      .append("svg:g").attr("class", (d) -> friendClass)
-
-    node.filter((d, i) -> i isnt 0)
-      .append("svg:rect")
-        .attr("class", "rect")
-        .attr("x", "-16px")
-        .attr("y", "-20px")
-        .attr("width", "200px")
-        .attr("height", "40px")
-    # the user avatar
-    node.append("svg:image")
-        .attr("class", "circle")
-        .attr("xlink:href", (d) -> d.userImageURL)
-        .attr("x", "-16px")
-        .attr("y", "-20px")
-        .attr("width", "40px")
-        .attr("height", "40px")
-    # the user name
-    node.append("svg:text")
-        .attr("class", "nodetext")
-        .attr("dx", 32)
-        .attr("dy", ".35em").text (d) -> d.userName
-
-    force.on "tick", (e) ->
-      resize()
-      link.attr("x1", (d) -> d.source.x)
-          .attr("y1", (d) -> d.source.y)
-          .attr("x2", (d) -> d.target.x)
-          .attr("y2", (d) -> d.target.y)
-
-      node.attr "transform", (d) ->
-        # only translate the center node (index 0), the rest auto-follow
-        if d.index is 0
-          damper = 0.1
-          d.x = if x then d.x + (x - d.x) * (damper + 0.71) * e.alpha else 400
-          d.y = if y then d.y + (y - d.y) * (damper + 0.71) * e.alpha else 400
-        "translate(#{d.x},#{d.y})"
+    node.attr "transform", (d) ->
+      # only translate the center node (index 0), the rest auto-follow
+      if d.index is 0
+        damper = 0.1
+        d.x = if x then d.x + (x - d.x) * (damper + 0.71) * e.alpha else 400
+        d.y = if y then d.y + (y - d.y) * (damper + 0.71) * e.alpha else 400
+      "translate(#{d.x},#{d.y})"
 
 $ ->
   window.addEventListener "message", receiveMessage, false
-  setupBubbles()
-  registerEvents()
   $("#instructions").text instructions["default"]
+  
+  d3.json "graph.json", (json) ->
+    setupBubbles(json)
+    registerEvents()
