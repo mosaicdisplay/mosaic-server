@@ -79,11 +79,19 @@ swypApp = require('zappa').app ->
 
   self = this
 
-  @use 'bodyParser', 'static', 'cookies', 'cookieParser', session: {secret: @sessionSecret}
+  @use 'bodyParser', 'app.router', 'static', 'cookies', 'cookieParser', session: {secret: @sessionSecret}
   @enable 'default layout' # this is hella convenient
 
   @io.set("transports", ["xhr-polling"])
   @io.set("polling duration", 10)
+ 
+  @get '*': ->
+    if @request.headers['host'] == '127.0.0.1:3000'
+      @next()
+    else if @request.headers['x-forwarded-proto']!='https'
+      @redirect "https://swypserver.herokuapp.com#{@request.url}"
+    else
+      @next()
   
   @include 'swypClient'
   
@@ -223,7 +231,7 @@ swypApp = require('zappa').app ->
           console.log newAccount
           @render signup: {user_name: userName}
         else
-          console.log "signup success for", uSerName
+          console.log "signup success for", userName
           @redirect '/token'
     else
       @render signup: {user_name: userName}
