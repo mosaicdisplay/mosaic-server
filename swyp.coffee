@@ -77,6 +77,8 @@ swypApp = require('zappa').app ->
   #@mongoDBConnectURLSecret =  "mongodb://..."
   mongoose.connect(@mongoDBConnectURLSecret)
 
+  self = this
+
   @use 'bodyParser', 'static', 'cookies', 'cookieParser', session: {secret: @sessionSecret}
   @enable 'default layout' # this is hella convenient
 
@@ -240,50 +242,66 @@ swypApp = require('zappa').app ->
       input id: 'user_pass', type: 'text', name: 'user_pass', placeholder: 'login pass', size: 50
       button 'signup'
 
-  @post '/token', (req, res) ->
-    console.log req.body
-    reqName  = req.body.user_name
-    reqPassword = req.body.user_pass
-    fbId = req.body.fb_uid
-    fbToken = req.body.fb_token
-    console.log @request.cookies
-    @response.clearCookie 'sessiontoken'
-
-    Account.find {userName: reqName}, (err, docs)  =>
+  getTokenFromUserName = (userName, password, callback) => #callback(err, account, session)
+    console.log "finding #{userName}"
+    Account.find {userName: userName}, (err, docs)  =>
       matchingUser = docs[0]
       #console.log 'docs',docs, 'with first', matchingUser
       if matchingUser == null || matchingUser == undefined
-        console.log "login failed for #{reqName}"
-        @render login: {}
+        console.log "login failed for #{userName}"
+        callback "baduser", null, null
         return
 
-      if matchingUser.userPass != reqPassword
+      if matchingUser.userPass != password
         console.log "login pass failed for #{matchingUser.userName}"
         matchingUser == null
-        @render login: {}
+        callback "badpass", null, null
         return
        
       if matchingUser != null
+        console.log "match user"
         if matchingUser.sessions.length == 0
           newToken = "TOKENBLAH_#{matchingUser.userName}"
           console.log "Newtoken created #{newToken}"
-          session = {token: newToken, socketID: @id}
+          session =  new Session {token: newToken}
           matchingUser.sessions.push session
           matchingUser.save (error) =>
             if error != null
               console.log "didFailSave", error
-          console.log "create new session success for", matchingUser.userName
-
-          @response.cookie 'sessiontoken', newToken, { maxAge: 900000 }
-          @render login: {userID: matchingUser.userID, token: session.token}
+            console.log "create new session success for", matchingUser.userName
+            callback null, matchingUser, session
         else
+          console.log "login session success for", matchingUser.userName
           previousSession = matchingUser.sessions[0]
-          @response.cookie 'sessiontoken', previousSession.token, { maxAge: 900000 }
-          @render login: {userID: matchingUser.userID, token: previousSession.token}
+          callback null, matchingUser, previousSession
 
-  @get '/token': ->
+  
+  @post '/login', (req, res) =>
+    reqName  = req.body.user_name
+    reqPassword = req.body.user_pass
+    fbId = req.body.fb_uid
+    fbToken = req.body.fb_token
+    console.log "get token"
+    req.response.clearCookie 'sessiontoken'
+    getTokenFromUserName reqName,reqPassword, (err, account, session) =>
+      if err?
+        req.render login: {error: err}
+      else
+        req.response.cookie 'sessiontoken', session.token, { maxAge: 90000000000 }
+        req.redirect '/'
+  
+  @get '/login': ->
     @render login: {}
 
+  @post '/token', (req, res) ->
+    reqName  = req.body.user_name
+    reqPassword = req.body.user_pass
+    getTokenFromUserName reqName, reqPassword, (err, account, session) =>
+      if err?
+        req.render login: {error: err}
+      else
+        req.render login: {userID: matchingUser.userID, token: previousSession.token}
+      
   @view login: ->
     @title = 'login'
     @stylesheets = ['/style']
@@ -299,7 +317,7 @@ swypApp = require('zappa').app ->
     if @token != undefined && @userID != undefined
       p "{\"userID\" : \"#{@userID}\", \"token\" : \"#{@token}\"}"
     else
-      form method: 'post', action: '/token', ->
+      form method: 'post', action: '/login', ->
         input id: 'user_name', type: 'text', name: 'user_name', placeholder: 'login user', size: 50
         input id: 'user_pass', type: 'text', name: 'user_pass', placeholder: 'login pass', size: 50
         input id: 'fb_uid', type: 'hidden', name: 'fb_uid'

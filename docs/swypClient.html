@@ -1,0 +1,90 @@
+<!DOCTYPE html>  <html> <head>   <title>swypClient.coffee</title>   <meta http-equiv="content-type" content="text/html; charset=UTF-8">   <link rel="stylesheet" media="all" href="docco.css" /> </head> <body>   <div id="container">     <div id="background"></div>            <div id="jump_to">         Jump To &hellip;         <div id="jump_wrapper">           <div id="jump_page">                                           <a class="source" href="secrets.html">                 secrets.coffee               </a>                                           <a class="source" href="swyp.html">                 swyp.coffee               </a>                                           <a class="source" href="swypClient.html">                 swypClient.coffee               </a>                        </div>         </div>       </div>          <table cellpadding="0" cellspacing="0">       <thead>         <tr>           <th class="docs">             <h1>               swypClient.coffee             </h1>           </th>           <th class="code">           </th>         </tr>       </thead>       <tbody>                               <tr id="section-1">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-1">&#182;</a>               </div>                            </td>             <td class="code">               <div class="highlight"><pre><span class="vi">@include = </span><span class="o">-&gt;</span>
+  <span class="nx">@client</span> <span class="s">&#39;/swyp.js&#39;</span><span class="o">:</span> <span class="o">-&gt;</span>
+    </pre></div>             </td>           </tr>                               <tr id="section-2">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-2">&#182;</a>               </div>               <p>type defs</p>             </td>             <td class="code">               <div class="highlight"><pre>    <span class="nv">imageJPEGType = </span><span class="s">&quot;image/jpeg&quot;</span>
+    <span class="nv">imagePNGType = </span><span class="s">&quot;image/png&quot;</span></pre></div>             </td>           </tr>                               <tr id="section-3">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-3">&#182;</a>               </div>               <p>swyp api data</p>             </td>             <td class="code">               <div class="highlight"><pre>    <span class="nv">swypObjByID = </span><span class="p">[]</span>
+    <span class="nv">userLocation = </span><span class="p">[</span><span class="mf">44.680997</span><span class="p">,</span><span class="mf">10.317557</span><span class="p">]</span> <span class="c1"># a lng/lat pair</span>
+
+    <span class="nv">supportedContentTypes = </span><span class="p">[</span><span class="nx">imageJPEGType</span><span class="p">,</span> <span class="nx">imagePNGType</span><span class="p">]</span> <span class="c1">#in order of preference more-&gt;less</span>
+
+    <span class="nv">setLocation = </span><span class="nf">(pos)-&gt;</span>
+      <span class="nx">console</span><span class="p">.</span><span class="nx">log</span> <span class="s">&quot;updated location&quot;</span>
+      <span class="nv">userLocation = </span><span class="p">[</span><span class="nx">pos</span><span class="p">.</span><span class="nx">coords</span><span class="p">.</span><span class="nx">longitude</span><span class="p">,</span> <span class="nx">pos</span><span class="p">.</span><span class="nx">coords</span><span class="p">.</span><span class="nx">latitude</span><span class="p">]</span>
+      <span class="nx">makeStatusUpdate</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="nx">navigator</span><span class="p">.</span><span class="nx">geolocation</span></pre></div>             </td>           </tr>                               <tr id="section-4">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-4">&#182;</a>               </div>               <p>no error handling for now</p>             </td>             <td class="code">               <div class="highlight"><pre>      <span class="nx">navigator</span><span class="p">.</span><span class="nx">geolocation</span><span class="p">.</span><span class="nx">watchPosition</span><span class="p">(</span><span class="nx">setLocation</span><span class="p">,</span> <span class="kc">null</span><span class="p">)</span>
+
+    <span class="nx">$</span><span class="p">(</span><span class="s">&#39;document&#39;</span><span class="p">).</span><span class="nx">ready</span> <span class="o">-&gt;</span>
+      <span class="nx">$</span><span class="p">(</span><span class="s">&#39;#logout&#39;</span><span class="p">).</span><span class="nx">click</span> <span class="nf">(e)-&gt;</span>
+        <span class="nx">e</span><span class="p">.</span><span class="nx">preventDefault</span><span class="p">()</span>
+        <span class="nx">FB</span><span class="p">.</span><span class="nx">logout</span> <span class="nf">(res)-&gt;</span>
+          <span class="nx">console</span><span class="p">.</span><span class="nx">log</span> <span class="nx">res</span>
+    <span class="nx">$</span> <span class="o">=&gt;</span>
+      <span class="nx">$</span><span class="p">(</span><span class="s">&#39;#swypOut_button&#39;</span><span class="p">).</span><span class="nx">click</span> <span class="p">(</span><span class="nx">e</span><span class="p">)</span> <span class="o">=&gt;</span>
+       <span class="nv">pngFile = </span><span class="p">{</span>
+          <span class="nv">contentURL : </span><span class="s">&quot;http://swyp.us/guide/setupPhotos/setup1.png&quot;</span>
+          <span class="nv">contentMIME : </span><span class="nx">imagePNGType</span>
+        <span class="p">}</span>
+
+       <span class="nv">jpegFile = </span><span class="p">{</span>
+          <span class="nv">contentURL : </span><span class="s">&quot;http://fluid.media.mit.edu/people/natan/media/swyp/swyp.jpg&quot;</span>
+          <span class="nv">contentMIME : </span><span class="nx">imageJPEGType</span>
+        <span class="p">}</span>
+
+        <span class="nx">@emit</span> <span class="nv">swypOut: </span><span class="p">{</span><span class="nv">token: </span><span class="nx">localSessionToken</span><span class="p">(),</span> <span class="nv">previewImage: </span><span class="s">&quot;NONE!&quot;</span><span class="p">,</span> <span class="nv">typeGroups: </span><span class="p">[</span><span class="nx">pngFile</span><span class="p">,</span> <span class="nx">jpegFile</span><span class="p">]}</span>
+ 
+      <span class="nx">$</span><span class="p">(</span><span class="s">&quot;</span><span class="err">#</span><span class="s">statusupdate_button&quot;</span><span class="p">).</span><span class="nx">click</span> <span class="o">-&gt;</span>
+        <span class="nx">makeStatusUpdate</span><span class="p">()</span>
+    
+    <span class="nv">localSessionToken = </span><span class="o">=&gt;</span>
+      <span class="k">return</span> <span class="nx">$</span><span class="p">(</span><span class="s">&quot;</span><span class="err">#</span><span class="s">token_input&quot;</span><span class="p">).</span><span class="nx">val</span><span class="p">()</span>
+    
+    <span class="nv">makeSwypIn = </span><span class="p">(</span><span class="nx">swypObjID</span><span class="p">)</span> <span class="o">=&gt;</span>
+      <span class="k">if</span> <span class="nx">swypObjByID</span><span class="p">[</span><span class="nx">swypObjID</span><span class="p">]</span><span class="o">?</span>
+        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span> <span class="s">&quot;swyp in started for </span><span class="si">#{</span><span class="nx">swypObjID</span><span class="si">}</span><span class="s">&quot;</span>
+        <span class="nv">swypObj = </span><span class="nx">swypObjByID</span><span class="p">[</span><span class="nx">swypObjID</span><span class="p">]</span>
+        <span class="nv">commonTypes = </span><span class="nx">supportedContentTypes</span><span class="p">.</span><span class="nx">intersect</span><span class="p">(</span><span class="nx">swypObj</span><span class="p">.</span><span class="nx">availableMIMETypes</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nx">commonTypes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">?</span>
+          <span class="nx">@emit</span> <span class="nv">swypIn: </span><span class="p">{</span><span class="nv">token: </span><span class="nx">localSessionToken</span><span class="p">(),</span> <span class="nv">id: </span><span class="nx">swypObj</span><span class="p">.</span><span class="nx">id</span><span class="p">,</span> <span class="nx">contentMIME</span><span class="o">:</span><span class="nx">commonTypes</span><span class="p">[</span><span class="mi">0</span><span class="p">]}</span>
+        <span class="k">else</span>
+          <span class="nx">console</span><span class="p">.</span><span class="nx">log</span> <span class="s">&quot;no common filetypes for swyp&quot;</span>
+      <span class="k">else</span>
+        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span> <span class="s">&quot;swypObj not stored for id</span><span class="si">#{</span><span class="nx">swypObjID</span><span class="si">}</span><span class="s">&quot;</span>
+
+    <span class="nv">makeStatusUpdate = </span><span class="o">=&gt;</span>
+      <span class="nx">@emit</span> <span class="nv">statusUpdate: </span><span class="p">{</span><span class="nv">token: </span><span class="nx">localSessionToken</span><span class="p">(),</span> <span class="nv">location: </span><span class="nx">userLocation</span><span class="p">}</span>
+ 
+    <span class="nx">@</span><span class="kc">on</span> <span class="nv">swypInAvailable: </span><span class="o">-&gt;</span>
+      <span class="nx">console</span><span class="p">.</span><span class="nx">log</span> <span class="nx">@data</span>
+      <span class="nx">swypObjByID</span><span class="p">[</span><span class="nx">@data</span><span class="p">.</span><span class="nx">id</span><span class="p">]</span> <span class="o">=</span> <span class="nx">@data</span> <span class="c1">#{dateCreated: @data.dateCreated, id: @data.id, swypOuter: @data.swypOuter, availableMimeTypes: @data.availableMIMETypes}</span>
+      <span class="nx">console</span><span class="p">.</span><span class="nx">log</span> <span class="s">&quot;swyp in available </span><span class="si">#{</span><span class="nx">@data</span><span class="p">.</span><span class="nx">id</span><span class="si">}</span><span class="s">&quot;</span>
+      <span class="nx">$</span><span class="p">(</span><span class="s">&#39;body&#39;</span><span class="p">).</span><span class="nx">append</span> <span class="s">&quot;&lt;br /&gt; @ </span><span class="si">#{</span><span class="nx">@data</span><span class="p">.</span><span class="nx">dateCreated</span><span class="si">}</span><span class="s"> swypIn avail w.ID </span><span class="si">#{</span><span class="nx">@data</span><span class="p">.</span><span class="nx">id</span><span class="si">}</span><span class="s"> from </span><span class="si">#{</span><span class="nx">@data</span><span class="p">.</span><span class="nx">swypOuter</span><span class="si">}</span><span class="s"> with types: </span><span class="si">#{</span><span class="nx">@data</span><span class="p">.</span><span class="nx">availableMIMETypes</span><span class="si">}</span><span class="s">&quot;</span>
+      <span class="nx">$</span><span class="p">(</span><span class="s">&#39;body&#39;</span><span class="p">).</span><span class="nx">append</span> <span class="s">&quot;&lt;input id= &#39;button_</span><span class="si">#{</span><span class="nx">@data</span><span class="p">.</span><span class="nx">id</span><span class="si">}</span><span class="s">&#39;, type= &#39;button&#39;, value=&#39;swyp in!&#39;&gt;&quot;</span>
+      <span class="nx">$</span><span class="p">(</span><span class="s">&quot;</span><span class="err">#</span><span class="s">button_</span><span class="si">#{</span><span class="nx">@data</span><span class="p">.</span><span class="nx">id</span><span class="si">}</span><span class="s">&quot;</span><span class="p">).</span><span class="nx">bind</span> <span class="s">&#39;click&#39;</span><span class="p">,</span> <span class="o">=&gt;</span>
+          <span class="nx">makeSwypIn</span><span class="p">(</span><span class="nx">@data</span><span class="p">.</span><span class="nx">id</span><span class="p">)</span>
+
+
+    <span class="nx">@</span><span class="kc">on</span> <span class="nv">swypOutPending: </span><span class="o">-&gt;</span>
+      <span class="nx">$</span><span class="p">(</span><span class="s">&#39;body&#39;</span><span class="p">).</span><span class="nx">append</span> <span class="s">&quot;&lt;br /&gt; did swypOut @ </span><span class="si">#{</span><span class="nx">@data</span><span class="p">.</span><span class="nx">time</span><span class="si">}</span><span class="s"> w.ID </span><span class="si">#{</span><span class="nx">@data</span><span class="p">.</span><span class="nx">id</span><span class="si">}</span><span class="s">&quot;</span>
+
+    <span class="nx">@</span><span class="kc">on</span> <span class="nv">welcome: </span><span class="o">-&gt;</span>
+      <span class="nx">$</span><span class="p">(</span><span class="s">&#39;body&#39;</span><span class="p">).</span><span class="nx">append</span> <span class="s">&quot;Welcome to swyp,  </span><span class="si">#{</span><span class="nx">@data</span><span class="p">.</span><span class="nx">time</span><span class="si">}</span><span class="s">&quot;</span>
+    
+    <span class="nx">@</span><span class="kc">on</span> <span class="nv">unauthorized: </span><span class="o">-&gt;</span>
+      <span class="nx">$</span><span class="p">(</span><span class="s">&#39;body&#39;</span><span class="p">).</span><span class="nx">append</span> <span class="s">&quot;&lt;br /&gt;You&#39;re currently not logged in. &lt;a href=&#39;/login&#39;&gt;Login here&lt;/a&gt;.&quot;</span>
+    
+    <span class="nx">@</span><span class="kc">on</span> <span class="nv">updateGood: </span><span class="o">-&gt;</span>
+      <span class="nx">$</span><span class="p">(</span><span class="s">&#39;body&#39;</span><span class="p">).</span><span class="nx">append</span> <span class="s">&quot;&lt;br /&gt;you updated successfully! Cool yo!&quot;</span>
+    
+    <span class="nx">@</span><span class="kc">on</span> <span class="nv">nearbyRefresh: </span><span class="o">-&gt;</span>
+      <span class="nx">$</span><span class="p">(</span><span class="s">&#39;body&#39;</span><span class="p">).</span><span class="nx">append</span> <span class="s">&quot;&lt;br /&gt;received a nearby session update! w. nearby: </span><span class="si">#{</span><span class="nx">JSON</span><span class="p">.</span><span class="nx">stringify</span><span class="p">(</span><span class="nx">@data</span><span class="p">.</span><span class="nx">nearby</span><span class="p">)</span><span class="si">}</span><span class="s">&quot;</span>
+
+    <span class="nx">@</span><span class="kc">on</span> <span class="nv">updateRequest: </span><span class="o">-&gt;</span>
+      <span class="nx">$</span><span class="p">(</span><span class="s">&#39;body&#39;</span><span class="p">).</span><span class="nx">append</span> <span class="s">&quot;&lt;br /&gt;update requested!&quot;</span>
+      <span class="nx">makeStatusUpdate</span><span class="p">()</span>
+
+    <span class="nx">@</span><span class="kc">on</span> <span class="nv">dataAvailable: </span><span class="o">-&gt;</span>
+      <span class="nx">$</span><span class="p">(</span><span class="s">&#39;body&#39;</span><span class="p">).</span><span class="nx">append</span> <span class="s">&quot;&lt;img src=&#39;</span><span class="si">#{</span><span class="nx">@data</span><span class="p">.</span><span class="nx">contentURL</span><span class="si">}</span><span class="s">&#39; alt=&#39;imgID</span><span class="si">#{</span><span class="nx">@data</span><span class="p">.</span><span class="nx">id</span><span class="si">}</span><span class="s"> of type </span><span class="si">#{</span><span class="nx">@data</span><span class="p">.</span><span class="nx">contentMIME</span><span class="si">}</span><span class="s">&#39;/&gt;&quot;</span>
+     
+    <span class="nx">@connect</span><span class="p">()</span>
+
+</pre></div>             </td>           </tr>                </tbody>     </table>   </div> </body> </html> 

@@ -73,10 +73,10 @@
       $('body').append "<br /> did swypOut @ #{@data.time} w.ID #{@data.id}"
 
     @on welcome: ->
-      $('body').append "Hey Ethan, socket.io says the time!: #{@data.time}"
+      $('body').append "Welcome to swyp,  #{@data.time}"
     
     @on unauthorized: ->
-      $('body').append "<br />yo token is unauthorized, fo!! try tokens _alex _al _a"
+      $('body').append "<br />You're currently not logged in. <a href='/login'>Login here</a>."
     
     @on updateGood: ->
       $('body').append "<br />you updated successfully! Cool yo!"
