@@ -14,7 +14,7 @@ UserSchema.plugin mongooseAuth, {
 
 #sessions are contained within accounts, and represent an active connection to the swypServer
 #sessions contain the socket.io socket id via 'socketID', and the current location of the user
-Session = new Schema {
+SessionSchema = new Schema {
   token : String,
   socketID : String,
   expiration : Date,
@@ -27,10 +27,10 @@ Session = new Schema {
 #the account document contains the session embeddedDocument 
 AccountSchema = new Schema {
   userImageURL : String,
-  userID : { type: String, index: { unique: true }},
-  userName : { type: String, index: { unique: true }},
+  userID : { type: String, required: true, index: { unique: true }},
+  userName : { type: String, required: true},
   userPass : String
-  sessions : [Session]
+  sessions : [SessionSchema]
 }
 
 #each contentType the swyp-out supports generates one of these
@@ -45,9 +45,9 @@ TypeGroupSchema = new Schema {
 
 # each swyp-out generates one of these
 # it contains typeGroups, which are the various contentTypes supported by a specific swyped-out content
-# swypOuterID corresponds to a unique Account.userID
+# swypSenderID corresponds to a unique Account.userID
 SwypSchema = new Schema {
-  swypOuterID : String,
+  swypSenderID : String,
   swypRecipientID : String,
   dateCreated : Date,
   dateExpires : Date,
@@ -68,19 +68,18 @@ Swyp Schema -- Determine whether embedded in session, or seperate
 ###
 
 Account = mongoose.model 'Account', AccountSchema
+Session = mongoose.model 'Account.sessions', SessionSchema
 Swyp = mongoose.model 'Swyp', SwypSchema
 TypeGroup = mongoose.model 'Swyp.typeGroups', TypeGroupSchema
 `Array.prototype.unique = function() {    var o = {}, i, l = this.length, r = [];    for(i=0; i<l;i+=1) o[this[i]] = this[i];    for(i in o) r.push(o[i]);    return r;};`
 
 swypApp = require('zappa').app ->
   @include 'secrets'
-  #@mongoDBConnectURLSecret =  "mongodb://..."
   mongoose.connect(@mongoDBConnectURLSecret)
-
-  self = this
 
   @use 'bodyParser', 'app.router', 'static', 'cookies', 'cookieParser', session: {secret: @sessionSecret}
   @enable 'default layout' # this is hella convenient
+  crypto = require('crypto')
 
   @io.set("transports", ["xhr-polling"])
   @io.set("polling duration", 10)
@@ -95,9 +94,11 @@ swypApp = require('zappa').app ->
   
   @include 'swypClient'
   
-  #this method performs a callback with (error, account, activeSessions) w. the relevant account for a userID, as well as associated active sessions
-  accountForUserID = (userID, callback) -> #callback(error, account, activeSessions)
-     Account.find {"userID" : userID}, (err, docs)  =>
+  #this method performs a callback with (error, account, activeSessions) w. the relevant account for a publicUserID, as well as associated active sessions
+  #public user id is the user._id for a user, which does not disclose their external credentials
+  accountForPublicUserID = (publicID, callback) -> #callback(error, account, activeSessions)
+    objID = mongoose.mongo.BSONPure.ObjectID.fromString(publicID)
+    Account.find {_id : publicID}, (err, docs)  =>
       accountFound = docs[0] ? null
       if accountFound?
         activeSessions = activeSessionsForAccount(accountFound)
@@ -141,6 +142,9 @@ swypApp = require('zappa').app ->
     recursiveGetAccountsAtLocationArray 0,locations,[], (error, uniqueAccounts)=>
       #console.log "found relevant accounts #{uniqueAccounts.length}"
       activeSessions = []
+      if (uniqueAccounts? == false || error?)
+         console.log "no unique accounts or got error near #{locations}, err #{error}"
+         return
       uniqueAccounts.forEach (obj, i) =>
         sessionsForAccount = activeSessionsForAccount obj
         if sessionsForAccount[0]?
@@ -173,8 +177,12 @@ swypApp = require('zappa').app ->
       if ses.token == session.token
         return true
     return false
-   
-  relevantAccountsNearSession = (session, callback) -> #callback([{sessions:[Session], account: Account}], theSession)
+  
+  
+  # in the callback you get a "sendval" as a "relevantUpdate," a ready-to-emit packet including users nearby w. their:
+  # publicID: the internal mongo _id, instead of userID, to maintain email address confidentiality
+  # username, the non-unique public id, and userImageURL
+  relevantAccountsNearSession = (session, callback) -> #callback(relevantUpdate, theSession)
     Account.find {"sessions.location" : { $nearSphere : session.location, $maxDistance : 1/6378  }}, (err, docs) =>
       if err?
          console.log "error on session location lookup #{err}"
@@ -196,7 +204,7 @@ swypApp = require('zappa').app ->
         #don't need to send session details to every client, we don't save, so this is NBD
         shareAccounts = []
         for acc in relevantAccounts
-          shareAccounts.push {userID: acc.userID, userImageURL: acc.userImageURL}
+          shareAccounts.push {publicID: acc._id, userName: acc.userName, userImageURL: acc.userImageURL}
        
         #console.log "sessionToken #{session.token} gets accounts :"
         sendVal = {nearby: shareAccounts}
@@ -210,21 +218,31 @@ swypApp = require('zappa').app ->
       return null
   
   #grabs the active sessions for an accout, and returns in-line
-  activeSessionsForAccount = (account) =>
+  activeSessionsForAccount = (account) ->
     activeSessions = []
     if account.sessions?
       account.sessions.forEach (obj, i) =>
-        if (obj.expiration > new Date() || (obj.expiration?) == false) && @io.sockets.socket(obj.socketID)?
+        if sessionIsActive obj
           activeSessions.push(obj)
     return activeSessions
   
+  #returns whether a given session is active
+  sessionIsActive = (session) =>
+    return ((session.expiration > new Date() || (session.expiration?) == false) && @io.sockets.socket(session.socketID)?)
+  
   @post '/signup', (req, res) ->
-    userName   = req.body.user_name
-    userPassword = req.body.user_pass
-    if userName != "" and userPassword != ""
-      newAccount = new Account()
-      newAccount.set {userPass: userPassword}
-      newAccount.set {userName: userName, userID: userName}
+    userName   = req.body.user_name.trim()
+    userEmail = req.body.user_email.trim().toLowerCase()
+    userPassword = req.body.user_pass.trim()
+    if userName? and userPassword? and userEmail?
+      newAccount = new Account {userPass: userPassword, userName: userName, userID: userEmail}
+      
+      #generate gravitar URL
+      md5sum = crypto.createHash('md5')
+      md5sum.update userEmail
+      emailHash = md5sum.digest('hex')
+      gravURL = "https://secure.gravatar.com/avatar/#{emailHash}?s=250&d=mm"
+      newAccount.set {userImageURL: gravURL}
       newAccount.save (error) =>
         if error != null
           console.log "didFailSave", error
@@ -246,56 +264,61 @@ swypApp = require('zappa').app ->
     @scripts = ['/zappa/jquery','/zappa/zappa']
                                 
     form method: 'post', action: '/signup', ->
-      input id: 'user_name', type: 'text', name: 'user_name', placeholder: 'login user', size: 50
+      input id: 'user_name', type: 'text', name: 'user_name', placeholder: 'public username', size: 50
+      input id: 'user_email', type: 'text', name: 'user_email', placeholder: 'login email', size: 50
       input id: 'user_pass', type: 'text', name: 'user_pass', placeholder: 'login pass', size: 50
       button 'signup'
-
-  getTokenFromUserName = (userName, password, callback) => #callback(err, account, session)
-    console.log "finding #{userName}"
-    Account.find {userName: userName}, (err, docs)  =>
+  
+  getTokenFromUserName = (userID, password, callback) => #callback(err, account, session)
+    #console.log "finding #{userID}"
+    Account.find {userID: userID}, (err, docs)  =>
       matchingUser = docs[0]
       #console.log 'docs',docs, 'with first', matchingUser
-      if matchingUser == null || matchingUser == undefined
-        console.log "login failed for #{userName}"
+      if matchingUser? == false
+        console.log "login failed for #{userID}"
         callback "baduser", null, null
         return
 
       if matchingUser.userPass != password
-        console.log "login pass failed for #{matchingUser.userName}"
+        console.log "login pass failed for #{matchingUser.userID}"
         matchingUser == null
         callback "badpass", null, null
         return
        
       if matchingUser != null
         console.log "match user"
+      
         if matchingUser.sessions.length == 0
-          newToken = "TOKENBLAH_#{matchingUser.userName}"
+          newToken = "TOKENBLAH_#{matchingUser.userID}"
           console.log "Newtoken created #{newToken}"
           session =  new Session {token: newToken}
           matchingUser.sessions.push session
           matchingUser.save (error) =>
             if error != null
               console.log "didFailSave", error
-            console.log "create new session success for", matchingUser.userName
+            console.log "create new session success for", matchingUser.userID
             callback null, matchingUser, session
         else
-          console.log "login session success for", matchingUser.userName
+          console.log "login session success for", matchingUser.userID
           previousSession = matchingUser.sessions[0]
           callback null, matchingUser, previousSession
 
   
-  @post '/login', (req, res) =>
-    reqName  = req.body.user_name
+  @post '/login', (req, res) ->
+    reqUserID  = req.body.user_id
     reqPassword = req.body.user_pass
     fbId = req.body.fb_uid
     fbToken = req.body.fb_token
     console.log "get token"
     req.response.clearCookie 'sessiontoken'
-    getTokenFromUserName reqName,reqPassword, (err, account, session) =>
+    getTokenFromUserName reqUserID,reqPassword, (err, account, session) =>
       if err?
         req.render login: {error: err}
       else
-        req.response.cookie 'sessiontoken', session.token, { maxAge: 90000000000 }
+        if @request.headers['host'] == '127.0.0.1:3000'
+          req.response.cookie 'sessiontoken', session.token, {httpOnly: true, maxAge: 90000000000 }
+        else
+          req.response.cookie 'sessiontoken', session.token, {httpOnly: true, secure: true, maxAge: 90000000000 }
         req.redirect '/'
   
   @get '/login': ->
@@ -305,9 +328,9 @@ swypApp = require('zappa').app ->
     @redirect '/login'
 
   @post '/token', (req, res) ->
-    reqName  = req.body.user_name
+    reqUserID  = req.body.user_id
     reqPassword = req.body.user_pass
-    getTokenFromUserName reqName, reqPassword, (err, account, session) =>
+    getTokenFromUserName reqUserID, reqPassword, (err, account, session) =>
       if err?
         req.render login: {error: err}
       else
@@ -329,7 +352,7 @@ swypApp = require('zappa').app ->
       p "{\"userID\" : \"#{@userID}\", \"token\" : \"#{@token}\"}"
     else
       form method: 'post', action: '/login', ->
-        input id: 'user_name', type: 'text', name: 'user_name', placeholder: 'login user', size: 50
+        input id: 'user_id', type: 'text', name: 'user_id', placeholder: 'login userid/email', size: 50
         input id: 'user_pass', type: 'text', name: 'user_pass', placeholder: 'login pass', size: 50
         input id: 'fb_uid', type: 'hidden', name: 'fb_uid'
         input id: 'fb_token', type: 'hidden', name: 'fb_token'
@@ -380,7 +403,7 @@ swypApp = require('zappa').app ->
       supportedTypes = @data.typeGroups
       previewImage   = @data.previewImage
       recipientTo    = @data.to
-      fromSender     = user.userID
+      fromSender     = {publicID: user._id, userImageURL: user.userImageURL, userName: user.userName}
       swypTime       = new Date()
       swypExpire = new Date(new Date().valueOf()+50) #expires in 50 seconds
      
@@ -399,13 +422,13 @@ swypApp = require('zappa').app ->
          typeGroupsToSave.push typeGroupObj #this gets saved
          typeGroupsToSend.push type.contentMIME #this gets emitted 
 
-      nextSwyp = new Swyp {previewImage: previewImage, swypOuter: fromSender, dateCreated: swypTime, dateExpires: swypExpire, typeGroups: typeGroupsToSave}
+      nextSwyp = new Swyp {previewImage: previewImage, swypSender: user.userID, dateCreated: swypTime, dateExpires: swypExpire, typeGroups: typeGroupsToSave}
       console.log nextSwyp
       nextSwyp.save (error) =>
         if error != null
           console.log "didFailSave", error
           return
-        swypOutPacket = {id: nextSwyp._id, swypOuter: nextSwyp.swypOuter, dateCreated: nextSwyp.dateCreated, dateExpires: nextSwyp.dateExpires, availableMIMETypes: typeGroupsToSend}
+        swypOutPacket = {id: nextSwyp._id, swypSender: fromSender, dateCreated: nextSwyp.dateCreated, dateExpires: nextSwyp.dateExpires, availableMIMETypes: typeGroupsToSend}
         @emit swypOutPending: swypOutPacket #this sends only the MIMES
         console.log "new swypOut saved"
         #if no target recpient, you're swyping to area/'room'
@@ -420,7 +443,7 @@ swypApp = require('zappa').app ->
         else
           console.log "swypOut targetted to #{recipientTo}"
           #otherwise, there is a target recipient
-          accountForUserID recipientTo, (error,account, activeSessions) =>
+          accountForPublicUserID recipientTo, (error,account, activeSessions) =>
             if activeSessions?
               for updateSession in activeSessions
                 socket = socketForSession(updateSession)
@@ -429,6 +452,9 @@ swypApp = require('zappa').app ->
                    socket.emit('swypInAvailable', swypOutPacket)
 
   swypForID = (id, callback) => #{callback(err, swypObj)}
+    if id? == false
+       callback "noID", null
+       return
     objID = mongoose.mongo.BSONPure.ObjectID.fromString(id)
     Swyp.findOne {_id: objID}, (err, obj) =>
       if err? or (obj? == false)
