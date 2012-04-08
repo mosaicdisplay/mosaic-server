@@ -135,10 +135,15 @@
 
   swyp.setupBubbles = function(json) {
     var _this = this;
-    this.body = d3.select("body");
-    this.vis = this.body.append("svg:svg").attr("class", "hidden");
+    if (!this.body) this.body = d3.select("body");
+    if (!this.vis) {
+      this.vis = this.body.append("svg:svg").attr("class", "hidden");
+    } else {
+      this.vis = d3.select("svg");
+    }
     this.force.nodes(json.nodes).links(json.links).gravity(0).distance(100).charge(-1000).start();
-    this.link = this.vis.selectAll("line.link").data(json.links).enter().append("svg:line").attr("class", "link").attr("x1", function(d) {
+    this.link = this.vis.selectAll("line.link").data(json.links);
+    this.link.enter().append("svg:line").attr("class", "link").attr("x1", function(d) {
       return d.source.x;
     }).attr("y1", function(d) {
       return d.source.y;
@@ -147,7 +152,9 @@
     }).attr("y2", function(d) {
       return d.target.y;
     });
-    this.node = this.vis.selectAll("g.node").data(json.nodes).enter().append("svg:g").attr("class", function(d) {
+    this.link.exit().remove();
+    this.node = this.vis.selectAll("g.node").data(json.nodes);
+    this.node.enter().append("svg:g").attr("class", function(d) {
       return friendClass;
     });
     this.node.filter(function(d, i) {
@@ -159,6 +166,7 @@
     this.node.append("svg:text").attr("class", "nodetext").attr("dx", 32).attr("dy", ".35em").text(function(d) {
       return d.userName;
     });
+    this.node.exit().remove();
     return this.force.on("tick", function(e) {
       _this.resize();
       _this.link.attr("x1", function(d) {

@@ -39,7 +39,7 @@
         makeStatusUpdate()
 
       d3.json "graph.json", (json) ->
-        swypClient.initialize(json)
+        swypClient.initialize json
         
     
     localSessionToken = =>
@@ -85,6 +85,16 @@
     
     @on nearbyRefresh: ->
       $('body').append "<br />received a nearby session update! w. nearby: #{JSON.stringify(@data.nearby)}"
+      peers = @data.nearby
+      graph = {nodes:[{userName:"",userImageURL:"", friend:true}], links:[]}
+      i = 1
+      for peer in peers
+        graph.nodes.push({userName:peer.userName, userImageURL:peer.userImageURL, friend:false})
+        graph.links.push({source:i, target:0})
+        i += 1
+
+      swypClient.setupBubbles graph
+
 
     @on updateRequest: ->
       $('body').append "<br />update requested!"

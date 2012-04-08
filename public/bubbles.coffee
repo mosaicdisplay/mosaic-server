@@ -106,22 +106,26 @@ swyp.receiveMessage = (event) ->
 
 # setup the bubbles
 swyp.setupBubbles = (json)->
-  @body = d3.select("body")
-  @vis = @body.append("svg:svg").attr("class", "hidden")
+  if not @body then @body = d3.select("body")
+  if not @vis then @vis = @body.append("svg:svg").attr("class", "hidden") else @vis = d3.select("svg")
 
   @force.nodes(json.nodes).links(json.links).gravity(0)
        .distance(100).charge(-1000).start()
 
-  @link = @vis.selectAll("line.link").data(json.links).enter()
-    .append("svg:line")
+  @link = @vis.selectAll("line.link").data(json.links)
+    
+  @link.enter().append("svg:line")
       .attr("class", "link")
       .attr("x1", (d) -> d.source.x)
       .attr("y1", (d) -> d.source.y)
       .attr("x2", (d) -> d.target.x)
       .attr("y2", (d) -> d.target.y)
 
-  @node = @vis.selectAll("g.node").data(json.nodes).enter()
-    .append("svg:g").attr("class", (d) -> friendClass)
+  @link.exit().remove()
+
+  @node = @vis.selectAll("g.node").data(json.nodes)
+  @node.enter()
+       .append("svg:g").attr("class", (d) -> friendClass)
 
   @node.filter((d, i) -> i isnt 0)
     .append("svg:rect")
@@ -143,6 +147,8 @@ swyp.setupBubbles = (json)->
       .attr("class", "nodetext")
       .attr("dx", 32)
       .attr("dy", ".35em").text (d) -> d.userName
+
+  @node.exit().remove()
 
   @force.on "tick", (e) =>
     @resize()
