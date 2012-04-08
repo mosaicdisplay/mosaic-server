@@ -44,9 +44,10 @@ checkForCollisions = (ex, ey) ->
     collisionCount += 1 if collision
     d3.select(this).attr "class", (if collision then "hovered" else friendClass(d))
   # update the instructions if dragging over a person
-  $("#instructions").text instructions[(if (collisionCount > 0) then "drop" else "default")]
+  $("#instructions").text swyp.instructions[(if (collisionCount > 0) then "drop" else "default")]
 
 swyp.hideSwyp = ->
+  console.log 'hiding swyp'
   @node.attr "class", friendClass
   @vis.attr "class", "hidden"
   $("#preview").hide()
@@ -91,7 +92,7 @@ swyp.registerEvents = ->
 # respond to message when in iframe
 swyp.receiveMessage = (event) ->
   console.log "RECEIVED: " + JSON.stringify(event.data)
-  sourceWindow = event.source
+  swyp.sourceWindow = event.source
   eType = event.data.e
   touches = event.data.touches
   ex = touches[0] - 100
@@ -102,12 +103,14 @@ swyp.receiveMessage = (event) ->
     console.log "show bubbles"
     positionPreview ex, ey
     $("#preview").attr "src", event.data.img
-    @showBubblesAt ex, ey
+    swyp.showBubblesAt ex, ey
 
 # setup the bubbles
 swyp.setupBubbles = (json)->
   if not @body then @body = d3.select("body")
-  if not @vis then @vis = @body.append("svg:svg").attr("class", "hidden") else @vis = d3.select("svg")
+  
+  if @vis then $('svg').remove() # hack! BAD
+  @vis = @body.append("svg:svg").attr("class", "hidden")
 
   @force.nodes(json.nodes).links(json.links).gravity(0)
        .distance(100).charge(-1000).start()
@@ -167,7 +170,7 @@ swyp.setupBubbles = (json)->
 
 swyp.initialize = (json)->
   window.addEventListener "message", @receiveMessage, false
-  $("#instructions").text instructions["default"]
+  $("#instructions").text @instructions["default"]
   @setupBubbles json
   @registerEvents()
 

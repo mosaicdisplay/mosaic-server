@@ -64,10 +64,11 @@
       if (collision) collisionCount += 1;
       return d3.select(this).attr("class", (collision ? "hovered" : friendClass(d)));
     });
-    return $("#instructions").text(instructions[(collisionCount > 0 ? "drop" : "default")]);
+    return $("#instructions").text(swyp.instructions[(collisionCount > 0 ? "drop" : "default")]);
   };
 
   swyp.hideSwyp = function() {
+    console.log('hiding swyp');
     this.node.attr("class", friendClass);
     this.vis.attr("class", "hidden");
     $("#preview").hide();
@@ -117,9 +118,9 @@
   };
 
   swyp.receiveMessage = function(event) {
-    var eType, ex, ey, sourceWindow, touches;
+    var eType, ex, ey, touches;
     console.log("RECEIVED: " + JSON.stringify(event.data));
-    sourceWindow = event.source;
+    swyp.sourceWindow = event.source;
     eType = event.data.e;
     touches = event.data.touches;
     ex = touches[0] - 100;
@@ -129,18 +130,15 @@
       console.log("show bubbles");
       positionPreview(ex, ey);
       $("#preview").attr("src", event.data.img);
-      return this.showBubblesAt(ex, ey);
+      return swyp.showBubblesAt(ex, ey);
     }
   };
 
   swyp.setupBubbles = function(json) {
     var _this = this;
     if (!this.body) this.body = d3.select("body");
-    if (!this.vis) {
-      this.vis = this.body.append("svg:svg").attr("class", "hidden");
-    } else {
-      this.vis = d3.select("svg");
-    }
+    if (this.vis) $('svg').remove();
+    this.vis = this.body.append("svg:svg").attr("class", "hidden");
     this.force.nodes(json.nodes).links(json.links).gravity(0).distance(100).charge(-1000).start();
     this.link = this.vis.selectAll("line.link").data(json.links);
     this.link.enter().append("svg:line").attr("class", "link").attr("x1", function(d) {
@@ -192,7 +190,7 @@
 
   swyp.initialize = function(json) {
     window.addEventListener("message", this.receiveMessage, false);
-    $("#instructions").text(instructions["default"]);
+    $("#instructions").text(this.instructions["default"]);
     this.setupBubbles(json);
     return this.registerEvents();
   };

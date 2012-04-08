@@ -51,7 +51,7 @@ SwypSchema = new Schema {
   swypRecipientID : String,
   dateCreated : Date,
   dateExpires : Date,
-  previewImageJPG : String,
+  previewImageJPGBase64 : String
   typeGroups : [TypeGroup]
 }
 
@@ -380,11 +380,13 @@ swypApp = require('zappa').app ->
     swypForID swypID, (err, swyp) =>
       if swyp?
         console.log "got swyp id #{swyp._id}"
-        if swyp.previewImageJPG?
+        if swyp.previewImageJPGBase64?
           @response.contentType 'image/jpeg'
-          decodedImage = new Buffer(swyp.previewImageJPG, 'base64')
+          #console.log swyp.previewImageJPGBase64
           #@response.setHeader 'Content-Transfer-Encoding', 'base64'
-          @send(decodedImage)
+          decodedImage = new Buffer swyp.previewImageJPGBase64, 'base64'
+          @send decodedImage
+          #@response.end swyp.previewImageJPG, 'binary'
         else
           @render 404: {status: 404}
       else
@@ -431,8 +433,8 @@ swypApp = require('zappa').app ->
         return
       #implement function to evaluate user token and abort if invalid
       supportedTypes = @data.typeGroups
-      previewImage   = @data.previewImageJPGBase64
-      recipientTo    = @data.to
+      previewImage = @data.previewImageJPGBase64
+      recipientTo    = @data.to.trim()
       fromSender     = {publicID: user._id, userImageURL: user.userImageURL, userName: user.userName}
       swypTime       = new Date()
       swypExpire = new Date(new Date().valueOf()+50) #expires in 50 seconds
@@ -452,16 +454,17 @@ swypApp = require('zappa').app ->
          typeGroupsToSave.push typeGroupObj #this gets saved
          typeGroupsToSend.push type.contentMIME #this gets emitted 
 
-      nextSwyp = new Swyp {previewImageJPG: previewImage, swypSender: user.userID, dateCreated: swypTime, dateExpires: swypExpire, typeGroups: typeGroupsToSave}
+      nextSwyp = new Swyp {previewImageJPGBase64: previewImage, swypSender: user.userID, dateCreated: swypTime, dateExpires: swypExpire, typeGroups: typeGroupsToSave}
       nextSwyp.save (error) =>
         if error != null
           console.log "didFailSave", error
           return
-        swypOutPacket = {id: nextSwyp._id, swypSender: fromSender, dateCreated: nextSwyp.dateCreated, dateExpires: nextSwyp.dateExpires, availableMIMETypes: typeGroupsToSend}
+        previewImageURL = "https://swypserver.herokuapp.com/preview/#{nextSwyp._id}"
+        swypOutPacket = {id: nextSwyp._id, swypSender: fromSender, dateCreated: nextSwyp.dateCreated, dateExpires: nextSwyp.dateExpires, availableMIMETypes: typeGroupsToSend, previewImageURL: previewImageURL}
         @emit swypOutPending: swypOutPacket #this sends only the MIMES
         console.log "new swypOut saved"
         #if no target recpient, you're swyping to area/'room'
-        if recipientTo? == false
+        if recipientTo? == false || recipientTo == ""
           accountsAndSessionsNearLocation session.location, (sessionsByAccount, allSessions) =>
              if allSessions?
               for updateSession in allSessions

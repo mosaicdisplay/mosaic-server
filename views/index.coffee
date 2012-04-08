@@ -11,7 +11,7 @@
             '/bubbles']
 
 h1 "#instructions",
-img "#preview"
+img "#preview",
 
 div 'swypStatusControls', style: 'position: relative; float: right',  ->
   input id: 'token_input', type: 'text', name: 'token_input', placeholder: 'session token', size: 50, value: @token
