@@ -94,14 +94,18 @@ swypApp = require('zappa').app ->
   
   @include 'swypClient'
   
-  process.on 'uncaughtException', (err) =>
-    console.log "uncaught exception #{err} not terminating app"
+  #process.on 'uncaughtException', (err) =>
+  #  console.log "uncaught exception #{err} not terminating app"
 
   #this method performs a callback with (error, account, activeSessions) w. the relevant account for a publicUserID, as well as associated active sessions
   #public user id is the user._id for a user, which does not disclose their external credentials
   accountForPublicUserID = (publicID, callback) -> #callback(error, account, activeSessions)
-    objID = mongoose.mongo.BSONPure.ObjectID.fromString(publicID)
-    Account.find {_id : publicID}, (err, docs)  =>
+    try
+      objID = mongoose.mongo.BSONPure.ObjectID.fromString(publicID)
+    catch err
+      console.log "objID err: #{err} from publicid #{publicID}"
+ 
+    Account.find {_id : objID}, (err, docs)  =>
       accountFound = docs[0] ? null
       if accountFound?
         activeSessions = activeSessionsForAccount(accountFound)
@@ -367,6 +371,29 @@ swypApp = require('zappa').app ->
         'Unlink Facebook account'
       div '#fb-login.fb-login-button.hidden', ->
         'Link account with Facebook'
+  
+  @get '/preview/:id': (req, res) ->
+    swypID = @params.id
+    if swypID? == false
+      @render 404: {status: 404}
+      return
+    swypForID swypID, (err, swyp) =>
+      if swyp?
+        console.log "got swyp id #{swyp._id}"
+        if swyp.previewImageJPG?
+          @response.contentType 'image/jpeg'
+          decodedImage = new Buffer(swyp.previewImageJPG, 'base64')
+          #@response.setHeader 'Content-Transfer-Encoding', 'base64'
+          @send(decodedImage)
+        else
+          @render 404: {status: 404}
+      else
+        console.log "no image for id #{swypID}"
+        @render 404: {status: 404}
+  
+  @view 404: ->
+    @title = "404, swyp off"
+    h1 @title
 
   @get '/': ->
     sessionToken = null
@@ -404,7 +431,7 @@ swypApp = require('zappa').app ->
         return
       #implement function to evaluate user token and abort if invalid
       supportedTypes = @data.typeGroups
-      previewImage   = @data.previewImage
+      previewImage   = @data.previewImageJPGBase64
       recipientTo    = @data.to
       fromSender     = {publicID: user._id, userImageURL: user.userImageURL, userName: user.userName}
       swypTime       = new Date()
@@ -425,8 +452,7 @@ swypApp = require('zappa').app ->
          typeGroupsToSave.push typeGroupObj #this gets saved
          typeGroupsToSend.push type.contentMIME #this gets emitted 
 
-      nextSwyp = new Swyp {previewImage: previewImage, swypSender: user.userID, dateCreated: swypTime, dateExpires: swypExpire, typeGroups: typeGroupsToSave}
-      console.log nextSwyp
+      nextSwyp = new Swyp {previewImageJPG: previewImage, swypSender: user.userID, dateCreated: swypTime, dateExpires: swypExpire, typeGroups: typeGroupsToSave}
       nextSwyp.save (error) =>
         if error != null
           console.log "didFailSave", error
@@ -458,11 +484,14 @@ swypApp = require('zappa').app ->
     if id? == false
        callback "noID", null
        return
-    objID = mongoose.mongo.BSONPure.ObjectID.fromString(id)
+    try
+      objID = mongoose.mongo.BSONPure.ObjectID.fromString(id)
+    catch err
+      console.log "objID err: #{err} from id #{id}"
     Swyp.findOne {_id: objID}, (err, obj) =>
       if err? or (obj? == false)
-         callback err, null
          console.log "no swyp for id #{id} found, w. err #{err}"
+         callback err, null
          return
       if obj?
         callback null, obj
