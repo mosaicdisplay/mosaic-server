@@ -71,7 +71,7 @@
       console.log @data
       swypObjByID[@data.id] = @data #{dateCreated: @data.dateCreated, id: @data.id, swypSender: @data.swypSender, availableMimeTypes: @data.availableMIMETypes}
       console.log "swyp in available #{@data.id}"
-      $('body').append "<br /> @ #{@data.dateCreated} swypIn avail w.ID #{@data.id} from #{@data.swypSender} with types: #{@data.availableMIMETypes} <img src='#{@data.swypSender.userImageURL}' />"
+      $('body').append "<br /> @ #{@data.dateCreated} swypIn avail w.ID #{@data.id} from #{@data.swypSender} with types: #{@data.availableMIMETypes} <img src='#{@data.swypSender.userImageURL}' /> <img src='#{@data.previewImageURL}' />"
       $('body').append "<input id= 'button_#{@data.id}', type= 'button', value='swyp in!'>"
       $("#button_#{@data.id}").bind 'click', =>
           makeSwypIn(@data.id)
