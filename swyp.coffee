@@ -434,7 +434,7 @@ swypApp = require('zappa').app ->
       #implement function to evaluate user token and abort if invalid
       supportedTypes = @data.typeGroups
       previewImage = @data.previewImageJPGBase64
-      recipientTo    = @data.to
+      recipientTo    = @data.to.trim()
       fromSender     = {publicID: user._id, userImageURL: user.userImageURL, userName: user.userName}
       swypTime       = new Date()
       swypExpire = new Date(new Date().valueOf()+50) #expires in 50 seconds
@@ -464,7 +464,7 @@ swypApp = require('zappa').app ->
         @emit swypOutPending: swypOutPacket #this sends only the MIMES
         console.log "new swypOut saved"
         #if no target recpient, you're swyping to area/'room'
-        if recipientTo? == false
+        if recipientTo? == false || recipientTo == ""
           accountsAndSessionsNearLocation session.location, (sessionsByAccount, allSessions) =>
              if allSessions?
               for updateSession in allSessions
