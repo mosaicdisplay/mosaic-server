@@ -87,7 +87,7 @@ d3.layout.force = function() {
       i = -1; if (k) while (++i < n) {
         o = nodes[i];
         o.x += (x - o.x) * k;
-        o.y += (y - o.y) * k;
+        o.y += (y - o.y) * k; // got rid of vertical gravity
       }
     }
 

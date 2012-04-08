@@ -1,1 +1,12 @@
-.hidden{display:none}
+html,body{width:100%;height:100%}
+html{background:rgba(0,0,0,0.75);font-family:'Helvetica Neue','Helvetica',sans-serif}
+.hidden{opacity:0}
+.link{stroke:none}
+.nodetext{pointer-events:none;font:16px sans-serif;font-weight:bold;padding:16px}
+.hovered .nodetext{fill:#fff;stroke:none}
+svg{-webkit-transition:opacity .2s linear}
+.rect{fill:#ccc}
+.friend .rect{fill:#0c0}
+.hovered .rect{fill:#09c}
+#preview{width:50px;height:50px;position:absolute;display:none;z-index:2;top:0;left:0}
+#instructions{position:absolute;width:100%;text-align:center;color:#fff;text-shadow:0 1px 0 #000;font-size:32px;font-weight:200;padding:16px;top:0;left:0}

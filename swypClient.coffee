@@ -19,11 +19,6 @@
       # no error handling for now
       navigator.geolocation.watchPosition(setLocation, null)
 
-    $('document').ready ->
-      $('#logout').click (e)->
-        e.preventDefault()
-        FB.logout (res)->
-          console.log res
     $ =>
       $('#swypOut_button').click (e) =>
        pngFile = {
@@ -42,6 +37,10 @@
  
       $("#statusupdate_button").click ->
         makeStatusUpdate()
+
+      d3.json "graph.json", (json) ->
+        swypClient.initialize(json)
+        
     
     localSessionToken = =>
       return $("#token_input").val()
