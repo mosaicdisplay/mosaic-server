@@ -1,55 +1,65 @@
 mongoose     = require('mongoose')
 mongooseAuth = require('mongoose-auth')
 Schema = mongoose.Schema
+
 ObjectId = mongoose.SchemaTypes.ObjectId
 User = null
 
 UserSchema = new Schema {}
 UserSchema.plugin mongooseAuth, {
   everymodule:
-    everyauth: 
+    everyauth:
       User: -> User
 }
 
-#embedded schema as suggested http://mongoosejs.com/docs/embedded-documents.html
-#   embedded seems to be the only way this works-- I had tried just literally embedding the properties (that didn't)
-Session = new Schema {
+#sessions are contained within accounts, and represent an active connection to the swypServer
+#sessions contain the socket.io socket id via 'socketID', and the current location of the user
+SessionSchema = new Schema {
   token : String,
   socketID : String,
   expiration : Date,
   location : [ Number, Number] #long,lat as suggested: http://www.mongodb.org/display/DOCS/Geospatial+Indexing 
 }
 
+#the account schema contains the user information and login credentials
+#the userIDs are unique, and can be universal identifiers (more internal than userName)
+#the userName is the display name for other users to see
+#the account document contains the session embeddedDocument 
 AccountSchema = new Schema {
   userImageURL : String,
-  userID : { type: String, index: { unique: true }},
-  userName : { type: String, index: { unique: true }},
+  userID : { type: String, required: true, index: { unique: true }},
+  userName : { type: String, required: true},
   userPass : String
-  sessions : [Session]
+  sessions : [SessionSchema]
 }
 
-FileTypeSchema = new Schema {
-  fileURL : String
-  fileMIME : String
+#each contentType the swyp-out supports generates one of these
+#typeGroups are fufilled as necessary to honor requests through swyp-ins
+TypeGroupSchema = new Schema {
+  contentURL : String
+  contentMIME : String
   requestingUserIDs : [String]
   uploadTimeoutDate : Date
   uploadCompletionDate : Date
 }
 
+# each swyp-out generates one of these
+# it contains typeGroups, which are the various contentTypes supported by a specific swyped-out content
+# swypSenderID corresponds to a unique Account.userID
 SwypSchema = new Schema {
-  swypOuterID : String,
+  swypSenderID : String,
   swypRecipientID : String,
   dateCreated : Date,
   dateExpires : Date,
-  previewImageJPG : String,
-  fileTypes : [FileType]
+  previewImageJPGBase64 : String
+  typeGroups : [TypeGroup]
 }
 
 ###
 Swyp Schema -- Determine whether embedded in session, or seperate
 • Swyps created on swypOut event
 • Swyps stored track:
-  - fileTypes [array of hashtables]
+  - typeGroups [array of hashtables]
     - URL location
     - Requesting userIDs
   - swyp-out ownerID
@@ -58,33 +68,62 @@ Swyp Schema -- Determine whether embedded in session, or seperate
 ###
 
 Account = mongoose.model 'Account', AccountSchema
+Session = mongoose.model 'Account.sessions', SessionSchema
 Swyp = mongoose.model 'Swyp', SwypSchema
-FileType = mongoose.model 'Swyp.fileTypes', FileTypeSchema
-mongoose.connect('mongodb://swyp:mongo4swyp2012@ds031587.mongolab.com:31587/heroku_app3235025')
-
+TypeGroup = mongoose.model 'Swyp.typeGroups', TypeGroupSchema
 `Array.prototype.unique = function() {    var o = {}, i, l = this.length, r = [];    for(i=0; i<l;i+=1) o[this[i]] = this[i];    for(i in o) r.push(o[i]);    return r;};`
 
 swypApp = require('zappa').app ->
-  @use 'bodyParser', 'static', 'cookieParser', session: {secret: 'gesturalsensation'}
+  @include 'secrets'
+  mongoose.connect(@mongoDBConnectURLSecret)
+
+  @use 'bodyParser', 'app.router', 'static', 'cookies', 'cookieParser', session: {secret: @sessionSecret}
   @enable 'default layout' # this is hella convenient
+  crypto = require('crypto')
 
   @io.set("transports", ["xhr-polling"])
   @io.set("polling duration", 10)
+ 
+  @get '*': ->
+    if @request.headers['host'] == '127.0.0.1:3000'
+      @next()
+    else if @request.headers['x-forwarded-proto']!='https'
+      @redirect "https://swypserver.herokuapp.com#{@request.url}"
+    else
+      @next()
   
   @include 'swypClient'
+  
+  #process.on 'uncaughtException', (err) =>
+  #  console.log "uncaught exception #{err} not terminating app"
 
-#this is the new asynchronous method-- for now there's only one hardcoded token in @client code
+  #this method performs a callback with (error, account, activeSessions) w. the relevant account for a publicUserID, as well as associated active sessions
+  #public user id is the user._id for a user, which does not disclose their external credentials
+  accountForPublicUserID = (publicID, callback) -> #callback(error, account, activeSessions)
+    try
+      objID = mongoose.mongo.BSONPure.ObjectID.fromString(publicID)
+    catch err
+      console.log "objID err: #{err} from publicid #{publicID}"
+ 
+    Account.find {_id : objID}, (err, docs)  =>
+      accountFound = docs[0] ? null
+      if accountFound?
+        activeSessions = activeSessionsForAccount(accountFound)
+        callback null, accountFound, activeSessions
+      else
+        callback err, null, null
+#this method asynchronously evaluates the validity of an Account session
   tokenValidate = (token, callback) ->
-    userFound = null
+    accountFound = null
     session = null
     Account.find {"sessions.token" : token}, (err, docs)  =>
-      userFound = docs[0] ? null
-      if userFound != null
-        userFound.sessions.forEach (obj, i) ->
+      accountFound = docs[0] ? null
+      if accountFound != null
+        accountFound.sessions.forEach (obj, i) ->
           if obj.token == token
             session = obj
-      callback userFound, session
-#      console.log "found user #{userFound} for session #{session} andtoken #{token}"
+      callback accountFound, session
+#      console.log "found user #{accountFound} for session #{session} andtoken #{token}"
 
 # checkyourselfbeforeyouwreckyourself.... asynchronous recersion, yo.
   recursiveGetAccountsAtLocationArray = (index, locationsArray, uniqueAccounts, callback) => #recursive function #callback(error, uniqueAccounts)
@@ -106,8 +145,13 @@ swypApp = require('zappa').app ->
 
 # here we iterate over all active sessions near the old and new location of a session, then we update each session with its relevant nearby users
   updateUniqueActiveSessionsNearLocationArray = (locations, callback) => #callback(error)
+    #console.log "updating nearby sessions to #{locations}"
     recursiveGetAccountsAtLocationArray 0,locations,[], (error, uniqueAccounts)=>
+      #console.log "found relevant accounts #{uniqueAccounts.length}"
       activeSessions = []
+      if (uniqueAccounts? == false || error?)
+         console.log "no unique accounts or got error near #{locations}, err #{error}"
+         return
       uniqueAccounts.forEach (obj, i) =>
         sessionsForAccount = activeSessionsForAccount obj
         if sessionsForAccount[0]?
@@ -116,7 +160,7 @@ swypApp = require('zappa').app ->
         relevantAccountsNearSession (session), (relevantUpdate, theSession) =>
           socket = socketForSession(theSession)
           if socket? && relevantUpdate?
-            console.log "nearbyrefreshing for sessionID #{theSession.socketID}"
+            #console.log "nearbyrefreshing for sessionID #{theSession.socketID}"
             socket.emit('nearbyRefresh', relevantUpdate)
 
   accountsAndSessionsNearLocation = (location, callback) -> #callback([{sessions:[Session], account: Account}], allSessions)
@@ -137,12 +181,16 @@ swypApp = require('zappa').app ->
   
   accountOwnsSession = (account, session) ->
     for ses in account.sessions
-      if ses._id == session._id
+      if ses.token == session.token
         return true
     return false
-   
-  relevantAccountsNearSession = (session, callback) -> #callback([{sessions:[Session], account: Account}], theSession)
-    Account.find {"sessions.location" : { $nearSphere : session.location, $maxDistance : 1/6378  }}, {userName: 1, userImageURL: 1, sessions: 1} , (err, docs) =>
+  
+  
+  # in the callback you get a "sendval" as a "relevantUpdate," a ready-to-emit packet including users nearby w. their:
+  # publicID: the internal mongo _id, instead of userID, to maintain email address confidentiality
+  # username, the non-unique public id, and userImageURL
+  relevantAccountsNearSession = (session, callback) -> #callback(relevantUpdate, theSession)
+    Account.find {"sessions.location" : { $nearSphere : session.location, $maxDistance : 1/6378  }}, (err, docs) =>
       if err?
          console.log "error on session location lookup #{err}"
          return
@@ -150,18 +198,23 @@ swypApp = require('zappa').app ->
         relevantAccounts = []
         for acc in docs
           if accountOwnsSession acc, session
+            #console.log "acc #{acc.userID} owns session with token #{session.token}"
             sessionsForAccount = activeSessionsForAccount acc
             #if more than one active session for the current account, then good!
             if sessionsForAccount[1]?
               relevantAccounts.push acc
             else
-              console.log "current user w. session #{session.socketID} ignored bcuz only 1 session"
+             #console.log "current user w. session #{session.socketID} ignored bcuz only 1 session"
           else
+            #console.log "acc #{acc.userID} does not own session with token #{session.token}"
             relevantAccounts.push acc
         #don't need to send session details to every client, we don't save, so this is NBD
+        shareAccounts = []
         for acc in relevantAccounts
-          acc.sessions = undefined
-        sendVal = {nearby: relevantAccounts}
+          shareAccounts.push {publicID: acc._id, userName: acc.userName, userImageURL: acc.userImageURL}
+       
+        #console.log "sessionToken #{session.token} gets accounts :"
+        sendVal = {nearby: shareAccounts}
         callback sendVal, session
     
   socketForSession = (session) =>
@@ -171,21 +224,32 @@ swypApp = require('zappa').app ->
       console.log "session no socket #{session.socketID}"
       return null
   
-  activeSessionsForAccount = (account) => #callback([Session])
+  #grabs the active sessions for an accout, and returns in-line
+  activeSessionsForAccount = (account) ->
     activeSessions = []
     if account.sessions?
       account.sessions.forEach (obj, i) =>
-        if (obj.expiration > new Date() || (obj.expiration?) == false) && @io.sockets.socket(obj.socketID)?
+        if sessionIsActive obj
           activeSessions.push(obj)
     return activeSessions
   
+  #returns whether a given session is active
+  sessionIsActive = (session) =>
+    return ((session.expiration > new Date() || (session.expiration?) == false) && @io.sockets.socket(session.socketID)?)
+  
   @post '/signup', (req, res) ->
-    userName   = req.body.user_name
-    userPassword = req.body.user_pass
-    if userName != "" and userPassword != ""
-      newAccount = new Account()
-      newAccount.set {userPass: userPassword}
-      newAccount.set {userName: userName, userID: userName}
+    userName   = req.body.user_name.trim()
+    userEmail = req.body.user_email.trim().toLowerCase()
+    userPassword = req.body.user_pass.trim()
+    if userName? and userPassword? and userEmail?
+      newAccount = new Account {userPass: userPassword, userName: userName, userID: userEmail}
+      
+      #generate gravitar URL
+      md5sum = crypto.createHash('md5')
+      md5sum.update userEmail
+      emailHash = md5sum.digest('hex')
+      gravURL = "https://secure.gravatar.com/avatar/#{emailHash}?s=250&d=mm"
+      newAccount.set {userImageURL: gravURL}
       newAccount.save (error) =>
         if error != null
           console.log "didFailSave", error
@@ -207,50 +271,78 @@ swypApp = require('zappa').app ->
     @scripts = ['/zappa/jquery','/zappa/zappa']
                                 
     form method: 'post', action: '/signup', ->
-      input id: 'user_name', type: 'text', name: 'user_name', placeholder: 'login user', size: 50
+      input id: 'user_name', type: 'text', name: 'user_name', placeholder: 'public username', size: 50
+      input id: 'user_email', type: 'text', name: 'user_email', placeholder: 'login email', size: 50
       input id: 'user_pass', type: 'text', name: 'user_pass', placeholder: 'login pass', size: 50
       button 'signup'
-
-  @post '/token', (req, res) ->
-    console.log req.body
-    reqName  = req.body.user_name
-    reqPassword = req.body.user_pass
-    fbId = req.body.fb_uid
-    fbToken = req.body.fb_token
-
-    Account.find {userName: reqName}, (err, docs)  =>
+  
+  getTokenFromUserName = (userID, password, callback) => #callback(err, account, session)
+    #console.log "finding #{userID}"
+    Account.find {userID: userID}, (err, docs)  =>
       matchingUser = docs[0]
       #console.log 'docs',docs, 'with first', matchingUser
-      if matchingUser == null || matchingUser == undefined
-        console.log "login failed for #{reqName}"
-        @render login: {}
+      if matchingUser? == false
+        console.log "login failed for #{userID}"
+        callback "baduser", null, null
         return
 
-      if matchingUser.userPass != reqPassword
-        console.log "login pass failed for #{matchingUser.userName}"
+      if matchingUser.userPass != password
+        console.log "login pass failed for #{matchingUser.userID}"
         matchingUser == null
-        @render login: {}
+        callback "badpass", null, null
         return
        
       if matchingUser != null
+        console.log "match user"
+      
         if matchingUser.sessions.length == 0
-          newToken = "TOKENBLAH_#{matchingUser.userName}"
+          newToken = "TOKENBLAH_#{matchingUser.userID}"
           console.log "Newtoken created #{newToken}"
-          session = {token: newToken, socketID: @id}
+          session =  new Session {token: newToken}
           matchingUser.sessions.push session
           matchingUser.save (error) =>
             if error != null
               console.log "didFailSave", error
-          console.log "create new session success for", matchingUser.userName
-          @render login: {userID: matchingUser.userID, token: session.token}
+            console.log "create new session success for", matchingUser.userID
+            callback null, matchingUser, session
         else
+          console.log "login session success for", matchingUser.userID
           previousSession = matchingUser.sessions[0]
-          console.log previousSession
-          @render login: {userID: matchingUser.userID, token: previousSession.token}
+          callback null, matchingUser, previousSession
 
-  @get '/token': ->
+  
+  @post '/login', (req, res) ->
+    reqUserID  = req.body.user_id
+    reqPassword = req.body.user_pass
+    fbId = req.body.fb_uid
+    fbToken = req.body.fb_token
+    console.log "get token"
+    req.response.clearCookie 'sessiontoken'
+    getTokenFromUserName reqUserID,reqPassword, (err, account, session) =>
+      if err?
+        req.render login: {error: err}
+      else
+        if @request.headers['host'] == '127.0.0.1:3000'
+          req.response.cookie 'sessiontoken', session.token, {httpOnly: true, maxAge: 90000000000 }
+        else
+          req.response.cookie 'sessiontoken', session.token, {httpOnly: true, secure: true, maxAge: 90000000000 }
+        req.redirect '/'
+  
+  @get '/login': ->
     @render login: {}
+  
+  @get '/token': ->
+    @redirect '/login'
 
+  @post '/token', (req, res) ->
+    reqUserID  = req.body.user_id
+    reqPassword = req.body.user_pass
+    getTokenFromUserName reqUserID, reqPassword, (err, account, session) =>
+      if err?
+        req.render login: {error: err}
+      else
+        req.render login: {userID: matchingUser.userID, token: previousSession.token}
+      
   @view login: ->
     @title = 'login'
     @stylesheets = ['/style']
@@ -266,8 +358,8 @@ swypApp = require('zappa').app ->
     if @token != undefined && @userID != undefined
       p "{\"userID\" : \"#{@userID}\", \"token\" : \"#{@token}\"}"
     else
-      form method: 'post', action: '/token', ->
-        input id: 'user_name', type: 'text', name: 'user_name', placeholder: 'login user', size: 50
+      form method: 'post', action: '/login', ->
+        input id: 'user_id', type: 'text', name: 'user_id', placeholder: 'login userid/email', size: 50
         input id: 'user_pass', type: 'text', name: 'user_pass', placeholder: 'login pass', size: 50
         input id: 'fb_uid', type: 'hidden', name: 'fb_uid'
         input id: 'fb_token', type: 'hidden', name: 'fb_token'
@@ -279,15 +371,43 @@ swypApp = require('zappa').app ->
         'Unlink Facebook account'
       div '#fb-login.fb-login-button.hidden', ->
         'Link account with Facebook'
+  
+  @get '/preview/:id': (req, res) ->
+    swypID = @params.id
+    if swypID? == false
+      @render 404: {status: 404}
+      return
+    swypForID swypID, (err, swyp) =>
+      if swyp?
+        console.log "got swyp id #{swyp._id}"
+        if swyp.previewImageJPGBase64?
+          @response.contentType 'image/jpeg'
+          #console.log swyp.previewImageJPGBase64
+          #@response.setHeader 'Content-Transfer-Encoding', 'base64'
+          decodedImage = new Buffer swyp.previewImageJPGBase64, 'base64'
+          @send decodedImage
+          #@response.end swyp.previewImageJPG, 'binary'
+        else
+          @render 404: {status: 404}
+      else
+        console.log "no image for id #{swypID}"
+        @render 404: {status: 404}
+  
+  @view 404: ->
+    @title = "404, swyp off"
+    h1 @title
 
   @get '/': ->
-    @render index: {}
+    sessionToken = null
+    if @request.cookies.sessiontoken?
+      sessionToken = @request.cookies.sessiontoken
+    @render index: {token: sessionToken}
+    console.log "resuming session of token #{sessionToken}"
 
   @on connection: ->
     @emit updateRequest: {time: new Date()}
   
   @on statusUpdate: ->
-    console.log "statusUpate"
     tokenValidate @data.token, (user, session) =>
       if user == null
         @emit unauthorized: {}
@@ -312,60 +432,107 @@ swypApp = require('zappa').app ->
         @emit unauthorized: {}
         return
       #implement function to evaluate user token and abort if invalid
-      contentID      = "newSwypID"
-      supportedTypes = @data.fileTypes
-      previewImage   = @data.previewImage
-      recipientTo    = @data.to
-      fromSender     = user.userID
+      supportedTypes = @data.typeGroups
+      previewImage = @data.previewImageJPGBase64
+      recipientTo    = @data.to.trim()
+      fromSender     = {publicID: user._id, userImageURL: user.userImageURL, userName: user.userName}
       swypTime       = new Date()
       swypExpire = new Date(new Date().valueOf()+50) #expires in 50 seconds
      
-      fileTypesToSave = [] #this is for the datastore
-      fileTypesToSend = [] #this is for the swyp-out event
-      for type in @data.fileTypes
-         fileTypeObj = new FileType {fileMIME: type.fileMIME, fileURL: type.fileURL} #no upload or completion date or timeouts
-         fileTypesToSave.push fileTypeObj
-         fileTypesToSend.push type.fileMIME
+      typeGroupsToSave = [] #this is for the datastore
+      typeGroupsToSend = [] #this is for the swyp-out event
+      if @data.typeGroups? == false
+        console.log "swypOut had bad typeGroupStructure"
+        @emit badData: {}
+        return
+      for type in @data.typeGroups
+         typeGroupObj = new TypeGroup {contentMIME: type.contentMIME} #no upload or completion date or timeouts
+         if type.contentURL?
+           console.log "url included #{type.contentURL}"
+           typeGroupObj.contentURL = type.contentURL
+           typeGroupObj.uploadCompletionDate = new Date()
+         typeGroupsToSave.push typeGroupObj #this gets saved
+         typeGroupsToSend.push type.contentMIME #this gets emitted 
 
-      nextSwyp = new Swyp {previewImage: previewImage, swypOuter: fromSender, dateCreated: swypTime, dateExpires: swypExpire, fileTypes: fileTypesToSave}
-      console.log nextSwyp
+      nextSwyp = new Swyp {previewImageJPGBase64: previewImage, swypSender: user.userID, dateCreated: swypTime, dateExpires: swypExpire, typeGroups: typeGroupsToSave}
       nextSwyp.save (error) =>
         if error != null
           console.log "didFailSave", error
           return
-        swypOutPacket = {id: nextSwyp._id, swypOuter: nextSwyp.swypOuter, dateCreated: nextSwyp.dateCreated, dateExpires: nextSwyp.dateExpires, availableMIMETypes: fileTypesToSend}
+        previewImageURL = "https://swypserver.herokuapp.com/preview/#{nextSwyp._id}"
+        swypOutPacket = {id: nextSwyp._id, swypSender: fromSender, dateCreated: nextSwyp.dateCreated, dateExpires: nextSwyp.dateExpires, availableMIMETypes: typeGroupsToSend, previewImageURL: previewImageURL}
         @emit swypOutPending: swypOutPacket #this sends only the MIMES
         console.log "new swypOut saved"
-        accountsAndSessionsNearLocation session.location, (sessionsByAccount, allSessions) =>
-          for toUpdateSession in allSessions
-            socket = socketForSession(toUpdateSession)
-            if socket? && toUpdateSession.socketID != session.socketID
-               console.log "updating swypout for sessionID #{toUpdateSession.socketID}"
-               socket.emit('swypInAvailable', swypOutPacket)
-      #will limit to nearby users later
-      ###
-      @broadcast swypInAvailable:
-         {id: contentID, \
-         fileTypes: supportedTypes,\
-         preview: previewImage,\
-         from: fromSender, \
-         time: swypTime}
-      ###
+        #if no target recpient, you're swyping to area/'room'
+        if recipientTo? == false || recipientTo == ""
+          accountsAndSessionsNearLocation session.location, (sessionsByAccount, allSessions) =>
+             if allSessions?
+              for updateSession in allSessions
+                socket = socketForSession(updateSession)
+                if socket? && updateSession.socketID != session.socketID
+                   console.log "updating swypout for sessionID #{updateSession.socketID}"
+                   socket.emit('swypInAvailable', swypOutPacket)
+        else
+          console.log "swypOut targetted to #{recipientTo}"
+          #otherwise, there is a target recipient
+          accountForPublicUserID recipientTo, (error,account, activeSessions) =>
+            if activeSessions?
+              for updateSession in activeSessions
+                socket = socketForSession(updateSession)
+                if socket? && updateSession.socketID != session.socketID
+                   console.log "updating swypout for sessionID #{updateSession.socketID}"
+                   socket.emit('swypInAvailable', swypOutPacket)
+
+  swypForID = (id, callback) => #{callback(err, swypObj)}
+    if id? == false
+       callback "noID", null
+       return
+    try
+      objID = mongoose.mongo.BSONPure.ObjectID.fromString(id)
+    catch err
+      console.log "objID err: #{err} from id #{id}"
+    Swyp.findOne {_id: objID}, (err, obj) =>
+      if err? or (obj? == false)
+         console.log "no swyp for id #{id} found, w. err #{err}"
+         callback err, null
+         return
+      if obj?
+        callback null, obj
+  
+  typeGroupFromMIMEInSwyp = (contentMIMEType, swyp) =>
+    for type in swyp.typeGroups
+      if contentMIMEType == type.contentMIME
+        return type
+    return null
+
+  ###
+  The @on swypIn event triggers from client's swypIn-action.
+  The client passes its requested contentMIME, and this server either immediately emits the contentURL at which the content of contentMIME is available, or it requests the upload of said MIME to a specific URL given by this server.
+  ###
   @on swypIn: ->
     tokenValidate @data.token, (user, session) =>
       if user == null
         @emit unauthorized: {}
         return
       contentID   = @data.id
-      contentType = @data.type
-      uploadURL   = "http://newUploadURL"
-      @emit dataPending:
-        {id: contentID, \
-         type: contentType}
-      @broadcast dataRequest:
-        {id: contentID, \
-         type: contentType,
-         uploadURL: uploadURL}
+      contentType = @data.contentMIME
+      swypForID contentID, (err, swyp) =>
+        if swyp?
+          typeGroupObj = typeGroupFromMIMEInSwyp contentType, swyp
+          if typeGroupObj? && typeGroupObj.uploadCompletionDate?
+            @emit dataAvailable:
+              {id: contentID, \
+              contentMIME: contentType,\
+              contentURL: typeGroupObj.contentURL}
+          else
+            uploadURL   = "http://newUploadURL"
+            @emit dataPending:
+              {id: contentID, \
+               type: contentType}
+            @broadcast dataRequest:
+              {id: contentID, \
+               type: contentType,
+               uploadURL: uploadURL}
      
   @on uploadCompleted: ->
     tokenValidate @data.token, (user, session) =>
