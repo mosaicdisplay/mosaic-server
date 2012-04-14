@@ -33,6 +33,7 @@
   };
 
   swyp.showBubblesAt = function(ex, ey) {
+    $('#instructions').show();
     this.vis.attr("class", "visible");
     this.isVisible = true;
     this.x = ex;
@@ -74,6 +75,7 @@
     this.node.attr("class", friendClass);
     this.vis.attr("class", "hidden");
     $("#preview").hide();
+    $("#instructions").hide();
     this.isVisible = false;
     if (this.sourceWindow != null) {
       return this.sourceWindow.postMessage("HIDE_SWYP", "*");
@@ -191,18 +193,42 @@
   };
 
   swyp.addPending = function(item) {
-    var $elem, $img, $link, obj, _i, _len, _ref;
+    var $elem, $img, $obj, $span, i, obj, _i, _j, _len, _len2, _ref, _ref2, _results;
     _ref = swyp.pending;
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
       obj = _ref[_i];
       if (obj.objectID === item.objectID) false;
     }
     swyp.pending.push(item);
-    $elem = $('<div/>').addClass('swyp_thumb').attr('id', "obj_" + objectID);
-    $link = $('<a/>').addClass('swyp_link').attr('href', item.fullURL);
+    $elem = $('<a/>').addClass('swyp_thumb').attr('id', "obj_" + item.objectID).attr('href', item.fullURL);
     $img = $('<img/>').attr('src', item.thumbnailURL);
-    $elem.append($link.append($img));
-    return $('body').append($elem);
+    $span = $('<span/>').addClass('username').text(item.userName);
+    $elem.append($img);
+    $elem.append($span);
+    $('body').append($elem);
+    i = 0;
+    _ref2 = swyp.pending;
+    _results = [];
+    for (_j = 0, _len2 = _ref2.length; _j < _len2; _j++) {
+      obj = _ref2[_j];
+      $obj = $("#obj_" + obj.objectID);
+      $obj.removeClass('top right bottom left');
+      switch (i % 4) {
+        case 0:
+          $obj.addClass('top');
+          break;
+        case 1:
+          $obj.addClass('right');
+          break;
+        case 2:
+          $obj.addClass('bottom');
+          break;
+        case 3:
+          $obj.addClass('left');
+      }
+      _results.push(i += 1);
+    }
+    return _results;
   };
 
   swyp.demoObj = function(fakeID) {

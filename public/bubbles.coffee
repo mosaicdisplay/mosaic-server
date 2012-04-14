@@ -24,6 +24,7 @@ realTouches = (elem) ->
 
 # (re)display the bubbles, centered at the provided coordinates
 swyp.showBubblesAt = (ex, ey) ->
+  $('#instructions').show()
   @vis.attr "class", "visible"
   @isVisible = true
   @x = ex
@@ -53,6 +54,7 @@ swyp.hideSwyp = ->
   @node.attr "class", friendClass
   @vis.attr "class", "hidden"
   $("#preview").hide()
+  $("#instructions").hide()
   @isVisible = false
   # send message to parent window if in iframe
   if @sourceWindow? then @sourceWindow.postMessage "HIDE_SWYP", "*"
@@ -179,11 +181,27 @@ swyp.addPending = (item)->
       false
 
   swyp.pending.push item
-  $elem = $('<div/>').addClass('swyp_thumb').attr('id', "obj_#{objectID}")
-  $link = $('<a/>').addClass('swyp_link').attr('href', item.fullURL)
+  $elem = $('<a/>').addClass('swyp_thumb').attr('id', "obj_#{item.objectID}")
+                                          .attr('href', item.fullURL)
   $img = $('<img/>').attr('src', item.thumbnailURL)
-  $elem.append($link.append($img))
+  $span = $('<span/>').addClass('username').text(item.userName)
+  $elem.append $img
+  $elem.append $span
   $('body').append $elem
+
+  # align all the objects. Must go through all in case of deletion
+  i = 0
+  for obj in swyp.pending
+    $obj = $("#obj_#{obj.objectID}")
+    $obj.removeClass('top right bottom left')
+
+    switch i % 4
+      when 0 then $obj.addClass 'top'
+      when 1 then $obj.addClass 'right'
+      when 2 then $obj.addClass 'bottom'
+      when 3 then $obj.addClass 'left'
+
+    i += 1
 
 swyp.demoObj = (fakeID)->
   {objectID: fakeID, userName: 'Ethan Sherbondy', thumbnailURL: 'https://www.google.com/logos/2012/doisneau12-sr.png', fullURL: 'https://www.google.com/logos/2012/doisneau12-hp.jpg'}
