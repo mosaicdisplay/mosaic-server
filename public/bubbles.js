@@ -118,11 +118,6 @@
         xy = realTouches(this);
         $("#preview").show();
         positionPreview(xy[0], xy[1]);
-        $("#swypMessages").html("");
-        $("#swypMessages").append($("<p/>").text("touch x: " + xy[0] + ", y: " + xy[1]));
-        swyp.node.each(function(d, i) {
-          return $("#swypMessages").append($("<p/>").text(JSON.stringify(this.getBoundingClientRect()) + " collision: " + collides(this, xy[0], xy[1])));
-        });
         return checkForCollisions(xy[0], xy[1]);
       }
     }).on(events[2], function() {
