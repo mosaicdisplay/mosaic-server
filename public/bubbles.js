@@ -18,6 +18,7 @@
       drop: "Drop to send.",
       sending: "Sending now..."
     },
+    dataToSend: void 0,
     pending: [],
     canSwypIn: true
   };
@@ -58,16 +59,21 @@
     }
   };
 
-  checkForCollisions = function(ex, ey) {
+  checkForCollisions = function(ex, ey, triggerSwypOut) {
     var collisionCount;
     collisionCount = 0;
     swyp.node.each(function(d, i) {
       var collision;
       collision = collides(this, ex, ey);
       if (collision) collisionCount += 1;
-      return d3.select(this).attr("class", (collision ? "hovered" : friendClass(d)));
+      d3.select(this).attr("class", (collision ? "hovered" : friendClass(d)));
+      if (collision && triggerSwypOut) return swyp.swypOut(d);
     });
     return $("#instructions").text(swyp.instructions[(collisionCount > 0 ? "drop" : "default")]);
+  };
+
+  swyp.swypOut = function(d) {
+    return alert("TRIGGERING SWYP OUT TO: " + (JSON.stringify(d)) + " with data: " + (JSON.stringify(swyp.dataToSend)));
   };
 
   swyp.hideSwyp = function() {
@@ -118,10 +124,15 @@
         xy = realTouches(this);
         $("#preview").show();
         positionPreview(xy[0], xy[1]);
-        return checkForCollisions(xy[0], xy[1]);
+        return checkForCollisions(xy[0], xy[1], false);
       }
     }).on(events[2], function() {
-      return swyp.hideSwyp();
+      var xy;
+      if (swyp.isVisible) {
+        xy = realTouches(this);
+        checkForCollisions(xy[0], xy[1], true);
+        return swyp.hideSwyp();
+      }
     });
   };
 
@@ -137,6 +148,7 @@
     if (eType === "dragstart") {
       console.log("show bubbles");
       positionPreview(ex, ey);
+      swyp.dataToSend = event.data;
       $("#preview").attr("src", event.data.img);
       return swyp.showBubblesAt(ex, ey);
     }
@@ -198,48 +210,50 @@
 
   swyp.addPending = function(item) {
     var $elem, $img, $span, events, i, obj, offset, offset_base, offset_margin, offset_sign, _i, _len, _ref;
-    _ref = swyp.pending;
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      obj = _ref[_i];
-      if (obj.objectID === item.objectID) return false;
-    }
-    swyp.pending.push(item);
-    $elem = $('<a/>').addClass('swyp_thumb').attr('id', "obj_" + item.objectID).attr('href', item.fullURL);
-    $img = $('<img/>').attr('src', item.thumbnailURL);
-    $span = $('<span/>').addClass('username').text(item.userName);
-    $elem.append($img);
-    $elem.append($span);
-    $('body').append($elem);
-    i = swyp.pending.length;
-    $elem.removeClass('top right bottom left');
-    offset_margin = i % 2 === 0 ? 'left' : 'top';
-    switch (i % 4) {
-      case 0:
-        $elem.addClass('top');
-        break;
-      case 1:
-        $elem.addClass('right');
-        break;
-      case 2:
-        $elem.addClass('bottom');
-        break;
-      case 3:
-        $elem.addClass('left');
-    }
-    offset_base = Math.floor(i / 4);
-    offset_sign = offset_base % 2 === 0 ? -1 : 1;
-    offset = offset_sign * (60 + Math.floor(Math.random() * 180));
-    $elem.css("margin-" + offset_margin, "+=" + offset);
-    events = eventsForDevice;
-    return $elem.on(events[2], function(e) {
-      if (confirm("Accept content from " + item.userName + "?")) {
-        console.log("CONFIRMED");
-        window.open(item.fullURL, '_blank');
+    if (swyp.canSwypIn) {
+      _ref = swyp.pending;
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        obj = _ref[_i];
+        if (obj.objectID === item.objectID) return false;
       }
-      return $(this).hide();
-    }).on('click', function(e) {
-      return e.preventDefault();
-    });
+      swyp.pending.push(item);
+      $elem = $('<a/>').addClass('swyp_thumb').attr('id', "obj_" + item.objectID).attr('href', item.fullURL);
+      $img = $('<img/>').attr('src', item.thumbnailURL);
+      $span = $('<span/>').addClass('username').text(item.userName);
+      $elem.append($img);
+      $elem.append($span);
+      $('body').append($elem);
+      i = swyp.pending.length;
+      $elem.removeClass('top right bottom left');
+      offset_margin = i % 2 === 0 ? 'left' : 'top';
+      switch (i % 4) {
+        case 0:
+          $elem.addClass('top');
+          break;
+        case 1:
+          $elem.addClass('right');
+          break;
+        case 2:
+          $elem.addClass('bottom');
+          break;
+        case 3:
+          $elem.addClass('left');
+      }
+      offset_base = Math.floor(i / 4);
+      offset_sign = offset_base % 2 === 0 ? -1 : 1;
+      offset = offset_sign * (60 + Math.floor(Math.random() * 180));
+      $elem.css("margin-" + offset_margin, "+=" + offset);
+      events = eventsForDevice;
+      return $elem.on(events[2], function(e) {
+        if (confirm("Accept content from " + item.userName + "?")) {
+          console.log("CONFIRMED");
+          window.open(item.fullURL, '_blank');
+        }
+        return $(this).hide();
+      }).on('click', function(e) {
+        return e.preventDefault();
+      });
+    }
   };
 
   swyp.demoObj = function(fakeID) {

@@ -13,7 +13,7 @@
 h1 "#instructions",
 img "#preview",
 
-div 'swypStatusControls', style: 'position: relative; float: right',  ->
+div 'swypStatusControls', ->
   input id: 'token_input', type: 'text', name: 'token_input', placeholder: 'session token', size: 50, value: @token
   input id: 'statusupdate_button', type: 'button', value: "status update!"
 

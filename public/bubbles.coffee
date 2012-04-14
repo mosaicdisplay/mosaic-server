@@ -14,6 +14,7 @@ swyp =
     default: "Drag the content onto the person you want to send it to."
     drop:    "Drop to send."
     sending: "Sending now..."
+  dataToSend: undefined #the data to be sent on swyp out
   pending: [] #any pending content for receipt
   canSwypIn: true #turn off to disable swyp ins
 
@@ -40,14 +41,22 @@ collides = (el, ex, ey) ->
 friendClass = (d) -> if d.friend then "friend" else "stranger"
 
 # see if mouse/finger drag collides with a person bubble
-checkForCollisions = (ex, ey) ->
+checkForCollisions = (ex, ey, triggerSwypOut) ->
   collisionCount = 0
   swyp.node.each (d, i) ->
     collision = collides(this, ex, ey)
     collisionCount += 1 if collision
     d3.select(this).attr "class", (if collision then "hovered" else friendClass(d))
+
+    # this is how swyp outs are triggered!
+    if collision and triggerSwypOut then swyp.swypOut d
+
   # update the instructions if dragging over a person
   $("#instructions").text swyp.instructions[(if (collisionCount > 0) then "drop" else "default")]
+
+swyp.swypOut = (d)->
+  # alex, this is where you put relevant swyp out code
+  alert "TRIGGERING SWYP OUT TO: #{JSON.stringify(d)} with data: #{JSON.stringify(swyp.dataToSend)}"
 
 swyp.hideSwyp = ->
   console.log 'hiding swyp'
@@ -91,8 +100,14 @@ swyp.registerEvents = ->
       xy = realTouches(this)
       $("#preview").show()
       positionPreview xy[0], xy[1]
-      checkForCollisions xy[0], xy[1]
-  ).on(events[2], -> swyp.hideSwyp())
+      checkForCollisions xy[0], xy[1], false
+  ).on(events[2], ->
+    if swyp.isVisible
+      xy = realTouches(this)
+      # trigger swyp out on the collided people
+      checkForCollisions xy[0], xy[1], true
+      swyp.hideSwyp()
+  )
 
 # respond to message when in iframe
 swyp.receiveMessage = (event) ->
@@ -107,6 +122,7 @@ swyp.receiveMessage = (event) ->
   if eType is "dragstart"
     console.log "show bubbles"
     positionPreview ex, ey
+    swyp.dataToSend = event.data
     $("#preview").attr "src", event.data.img
     swyp.showBubblesAt ex, ey
 
@@ -173,45 +189,51 @@ swyp.setupBubbles = (json)->
         d.y = if @y then d.y + (@y - d.y) * (damper + 0.71) * e.alpha else 400
       "translate(#{d.x},#{d.y})"
 
-# expects an object: {objectID: 1, userName:'Ethan', thumbnailURL: 'http://...', fullURL:
-# 'http://...'}
+
+# Alex, this is how you add a new incoming swyp!
+# expects an object: {objectID: 1, 
+#                     userName:'Ethan', 
+#                     thumbnailURL: 'http://...', 
+#                     fullURL: 'http://...'}
 swyp.addPending = (item)->
-  # make sure not a duplicate
-  for obj in swyp.pending
-    if obj.objectID is item.objectID
-      return false
+  # will not add any swypIns if you turn canSwypIn off!
+  if swyp.canSwypIn
+    # make sure not a duplicate
+    for obj in swyp.pending
+      if obj.objectID is item.objectID
+        return false
 
-  swyp.pending.push item
-  $elem = $('<a/>').addClass('swyp_thumb').attr('id', "obj_#{item.objectID}")
-                                          .attr('href', item.fullURL)
-  $img = $('<img/>').attr('src', item.thumbnailURL)
-  $span = $('<span/>').addClass('username').text(item.userName)
-  $elem.append $img
-  $elem.append $span
-  $('body').append $elem
+    swyp.pending.push item
+    $elem = $('<a/>').addClass('swyp_thumb').attr('id', "obj_#{item.objectID}")
+                                            .attr('href', item.fullURL)
+    $img = $('<img/>').attr('src', item.thumbnailURL)
+    $span = $('<span/>').addClass('username').text(item.userName)
+    $elem.append $img
+    $elem.append $span
+    $('body').append $elem
 
-  i = swyp.pending.length
-  $elem.removeClass('top right bottom left')
-  offset_margin = if i % 2 is 0 then 'left' else 'top'
-  switch i % 4
-    when 0 then $elem.addClass 'top'
-    when 1 then $elem.addClass 'right'
-    when 2 then $elem.addClass 'bottom'
-    when 3 then $elem.addClass 'left'
+    i = swyp.pending.length
+    $elem.removeClass('top right bottom left')
+    offset_margin = if i % 2 is 0 then 'left' else 'top'
+    switch i % 4
+      when 0 then $elem.addClass 'top'
+      when 1 then $elem.addClass 'right'
+      when 2 then $elem.addClass 'bottom'
+      when 3 then $elem.addClass 'left'
 
-  offset_base = Math.floor(i/4)
-  offset_sign = if offset_base % 2 is 0 then -1 else 1
-  offset = offset_sign*(60+Math.floor(Math.random()*180))
-  $elem.css("margin-#{offset_margin}", "+=#{offset}")
+    offset_base = Math.floor(i/4)
+    offset_sign = if offset_base % 2 is 0 then -1 else 1
+    offset = offset_sign*(60+Math.floor(Math.random()*180))
+    $elem.css("margin-#{offset_margin}", "+=#{offset}")
 
-  # bind events
-  events = eventsForDevice
-  $elem.on(events[2], (e)->
-    if confirm "Accept content from #{item.userName}?"
-      console.log "CONFIRMED"
-      window.open item.fullURL, '_blank'
-    $(this).hide() # either way, hide the content afterwards
-  ).on('click', (e)-> e.preventDefault())
+    # bind events
+    events = eventsForDevice
+    $elem.on(events[2], (e)->
+      if confirm "Accept content from #{item.userName}?"
+        console.log "CONFIRMED"
+        window.open item.fullURL, '_blank'
+      $(this).hide() # either way, hide the content afterwards
+    ).on('click', (e)-> e.preventDefault())
 
 swyp.demoObj = (fakeID)->
   fakeID ?= Math.floor(Math.random()*101)

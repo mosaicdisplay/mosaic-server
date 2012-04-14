@@ -11,7 +11,8 @@ svg{-webkit-transition:opacity .2s linear}
 #preview{width:50px;height:50px;position:absolute;display:none;z-index:2;top:0;left:0}
 #instructions{position:absolute;display:none;width:100%;text-align:center;color:#fff;text-shadow:0 1px 0 #000;font-size:32px;font-weight:200;padding:16px;top:0;left:0}
 #swypMessages{position:absolute;top:64px;left:0;width:100%;color:#fff}
-.swypStatusControls,#swypOutControls{position:absolute;z-index:3}
+.swypStatusControls,.swypOutControls{position:absolute;z-index:3}
+.swypStatusControls{right:0}
 .swyp_thumb{display:block;position:fixed;z-index:4;margin:-25px;text-decoration:none;-webkit-transition:margin .5s linear;}
 .swyp_thumb span{background:rgba(0,0,0,0.50);color:#fff;border-radius:8px;padding:4px 8px;display:block;position:absolute;width:160px;text-align:center}
 .swyp_thumb img{width:100px;height:100px;box-shadow:0 0 8px rgba(0,0,0,0.50)}
