@@ -233,7 +233,8 @@
     events = eventsForDevice;
     return $elem.on(events[2], function(e) {
       if (confirm("Accept content from " + item.userName + "?")) {
-        return console.log("CONFIRMED");
+        console.log("CONFIRMED");
+        return window.open(item.fullURL, '_blank');
       } else {
         return $(this).hide();
       }

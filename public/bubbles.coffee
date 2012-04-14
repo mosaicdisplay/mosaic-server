@@ -209,6 +209,7 @@ swyp.addPending = (item)->
   $elem.on(events[2], (e)->
     if confirm "Accept content from #{item.userName}?"
       console.log "CONFIRMED"
+      window.open item.fullURL, '_blank'
     else
       $(this).hide()
   ).on('click', (e)-> e.preventDefault())
