@@ -206,8 +206,12 @@ swyp.addPending = (item)->
 
   # bind events
   events = eventsForDevice
-  $elem.on('click', (e)->
-    confirm "Accept content from #{item.userName}?"
+  $elem.on(events[2], (e)->
+    if confirm "Accept content from #{item.userName}?"
+      console.log "CONFIRMED"
+    else
+      $(this).hide()
+  ).on('click', (e)-> e.preventDefault())
 
 swyp.demoObj = (fakeID)->
   fakeID ?= Math.floor(Math.random()*101)

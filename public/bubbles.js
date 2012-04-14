@@ -197,7 +197,7 @@
   };
 
   swyp.addPending = function(item) {
-    var $elem, $img, $span, eleft, etop, events, i, obj, offset, offset_base, offset_margin, offset_sign, _i, _len, _ref;
+    var $elem, $img, $span, events, i, obj, offset, offset_base, offset_margin, offset_sign, _i, _len, _ref;
     _ref = swyp.pending;
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
       obj = _ref[_i];
@@ -231,27 +231,12 @@
     offset = offset_sign * (60 + Math.floor(Math.random() * 180));
     $elem.css("margin-" + offset_margin, "+=" + offset);
     events = eventsForDevice;
-    eleft = $elem.css('left');
-    etop = $elem.css('top');
-    return $elem.on(events[0], function(e) {
-      console.log('touch started');
-      return $('body').on(events[1], function(e) {
-        var ex, ey;
-        ex = e.touches ? e.touches[0].pageX : e.pageX;
-        ey = e.touches ? e.touches[0].pageY : e.pageY;
-        $elem.offset({
-          top: ey - 25,
-          left: ex - 25
-        });
-        return console.log('mousemoved');
-      }).on(events[2], function(e) {
-        $('body').off(events[1]);
-        $elem.css({
-          'left': eleft,
-          'top': etop
-        });
-        return console.log('touch ended');
-      });
+    return $elem.on(events[2], function(e) {
+      if (confirm("Accept content from " + item.userName + "?")) {
+        return console.log("CONFIRMED");
+      } else {
+        return $(this).hide();
+      }
     }).on('click', function(e) {
       return e.preventDefault();
     });
