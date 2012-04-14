@@ -72,12 +72,13 @@ positionPreview = (ex, ey) ->
     left: (ex - 25)
     top: (ey - 25)
 
+touchEvents = [ "touchstart", "touchmove", "touchend" ]
+mouseEvents = [ "mousedown", "mousemove", "mouseup" ]
+eventsForDevice = (if isTouchDevice then touchEvents else mouseEvents)
+
 # register for touch or mouse events based on device
 swyp.registerEvents = ->
-  touchEvents = [ "touchstart", "touchmove", "touchend" ]
-  mouseEvents = [ "mousedown", "mousemove", "mouseup" ]
-  
-  events = (if isTouchDevice then touchEvents else mouseEvents)
+  events = eventsForDevice
   @body.on(events[0], ->
     bod = this
     d3.event.preventDefault()
@@ -203,6 +204,26 @@ swyp.addPending = (item)->
   offset = offset_sign*(60+Math.floor(Math.random()*180))
   $elem.css("margin-#{offset_margin}", "+=#{offset}")
 
+  # bind events
+  events = eventsForDevice
+  eleft = $elem.css('left')
+  etop = $elem.css('top')
+  $elem.on(events[0], (e)->
+    console.log 'touch started'
+    $('body').on(events[1], (e)->
+      ex = if e.touches then e.touches[0].pageX else e.pageX
+      ey = if e.touches then e.touches[0].pageY else e.pageY
+      $elem.offset({top:ey-25, left:ex-25})
+      console.log 'mousemoved'
+    ).on(events[2], (e)->
+      $('body').off(events[1])
+      $elem.css({'left':eleft, 'top':etop})
+      console.log 'touch ended'
+    )
+  ).on('click', (e)->
+    e.preventDefault()
+  )
+
 swyp.demoObj = (fakeID)->
   fakeID ?= Math.floor(Math.random()*101)
   {objectID: fakeID, userName: 'Ethan Sherbondy', thumbnailURL: 'https://www.google.com/logos/2012/doisneau12-sr.png', fullURL: 'https://www.google.com/logos/2012/doisneau12-hp.jpg'}
@@ -212,5 +233,6 @@ swyp.initialize = (json)->
   $("#instructions").text @instructions["default"]
   @setupBubbles json
   @registerEvents()
+  @addPending @demoObj()
 
 window.swypClient = swyp

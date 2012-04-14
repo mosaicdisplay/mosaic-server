@@ -1,5 +1,5 @@
 (function() {
-  var checkForCollisions, collides, friendClass, isTouchDevice, positionPreview, realTouches, swyp;
+  var checkForCollisions, collides, eventsForDevice, friendClass, isTouchDevice, mouseEvents, positionPreview, realTouches, swyp, touchEvents;
 
   swyp = {
     x: 0,
@@ -96,11 +96,15 @@
     });
   };
 
+  touchEvents = ["touchstart", "touchmove", "touchend"];
+
+  mouseEvents = ["mousedown", "mousemove", "mouseup"];
+
+  eventsForDevice = (isTouchDevice ? touchEvents : mouseEvents);
+
   swyp.registerEvents = function() {
-    var events, mouseEvents, touchEvents;
-    touchEvents = ["touchstart", "touchmove", "touchend"];
-    mouseEvents = ["mousedown", "mousemove", "mouseup"];
-    events = (isTouchDevice ? touchEvents : mouseEvents);
+    var events;
+    events = eventsForDevice;
     return this.body.on(events[0], function() {
       var bod, xy;
       bod = this;
@@ -193,7 +197,7 @@
   };
 
   swyp.addPending = function(item) {
-    var $elem, $img, $span, i, obj, offset, offset_base, offset_margin, offset_sign, _i, _len, _ref;
+    var $elem, $img, $span, eleft, etop, events, i, obj, offset, offset_base, offset_margin, offset_sign, _i, _len, _ref;
     _ref = swyp.pending;
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
       obj = _ref[_i];
@@ -225,7 +229,32 @@
     offset_base = Math.floor(i / 4);
     offset_sign = offset_base % 2 === 0 ? -1 : 1;
     offset = offset_sign * (60 + Math.floor(Math.random() * 180));
-    return $elem.css("margin-" + offset_margin, "+=" + offset);
+    $elem.css("margin-" + offset_margin, "+=" + offset);
+    events = eventsForDevice;
+    eleft = $elem.css('left');
+    etop = $elem.css('top');
+    return $elem.on(events[0], function(e) {
+      console.log('touch started');
+      return $('body').on(events[1], function(e) {
+        var ex, ey;
+        ex = e.touches ? e.touches[0].pageX : e.pageX;
+        ey = e.touches ? e.touches[0].pageY : e.pageY;
+        $elem.offset({
+          top: ey - 25,
+          left: ex - 25
+        });
+        return console.log('mousemoved');
+      }).on(events[2], function(e) {
+        $('body').off(events[1]);
+        $elem.css({
+          'left': eleft,
+          'top': etop
+        });
+        return console.log('touch ended');
+      });
+    }).on('click', function(e) {
+      return e.preventDefault();
+    });
   };
 
   swyp.demoObj = function(fakeID) {
@@ -242,7 +271,8 @@
     window.addEventListener("message", this.receiveMessage, false);
     $("#instructions").text(this.instructions["default"]);
     this.setupBubbles(json);
-    return this.registerEvents();
+    this.registerEvents();
+    return this.addPending(this.demoObj());
   };
 
   window.swypClient = swyp;
