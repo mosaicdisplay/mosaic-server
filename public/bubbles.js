@@ -234,10 +234,9 @@
     return $elem.on(events[2], function(e) {
       if (confirm("Accept content from " + item.userName + "?")) {
         console.log("CONFIRMED");
-        return window.open(item.fullURL, '_blank');
-      } else {
-        return $(this).hide();
+        window.open(item.fullURL, '_blank');
       }
+      return $(this).hide();
     }).on('click', function(e) {
       return e.preventDefault();
     });

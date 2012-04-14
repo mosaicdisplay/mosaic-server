@@ -210,8 +210,7 @@ swyp.addPending = (item)->
     if confirm "Accept content from #{item.userName}?"
       console.log "CONFIRMED"
       window.open item.fullURL, '_blank'
-    else
-      $(this).hide()
+    $(this).hide() # either way, hide the content afterwards
   ).on('click', (e)-> e.preventDefault())
 
 swyp.demoObj = (fakeID)->
