@@ -67,26 +67,26 @@
       console.log @data
       swypObjByID[@data.id] = @data #{dateCreated: @data.dateCreated, id: @data.id, swypSender: @data.swypSender, availableMimeTypes: @data.availableMIMETypes}
       console.log "swyp in available #{@data.id}"
-      $('body').append "<br /> @ #{@data.dateCreated} swypIn avail w.ID #{@data.id} from #{@data.swypSender} with types: #{@data.availableMIMETypes} <img src='#{@data.swypSender.userImageURL}' /> <img src='#{@data.previewImageURL}' />"
-      $('body').append "<input id= 'button_#{@data.id}', type= 'button', value='swyp in!'>"
+      $('#swypMessages').append "<br /> @ #{@data.dateCreated} swypIn avail w.ID #{@data.id} from #{@data.swypSender} with types: #{@data.availableMIMETypes} <img src='#{@data.swypSender.userImageURL}' /> <img src='#{@data.previewImageURL}' />"
+      $('#swypMessages').append "<input id= 'button_#{@data.id}', type= 'button', value='swyp in!'>"
       $("#button_#{@data.id}").bind 'click', =>
           makeSwypIn(@data.id)
 
 
     @on swypOutPending: ->
-      $('body').append "<br /> did swypOut @ #{@data.time} w.ID #{@data.id}"
+      $('#swypMessages').append "<br /> did swypOut @ #{@data.time} w.ID #{@data.id}"
 
     @on welcome: ->
-      $('body').append "Welcome to swyp,  #{@data.time}"
+      $('#swypMessages').append "Welcome to swyp,  #{@data.time}"
     
     @on unauthorized: ->
-      $('body').append "<br />You're currently not logged in. <a href='/login'>Login here</a>."
+      $('#swypMessages').append "<br />You're currently not logged in. <a href='/login'>Login here</a>."
     
     @on updateGood: ->
-      $('body').append "<br />you updated successfully! Cool yo!"
+      $('#swypMessages').append "<br />you updated successfully! Cool yo!"
     
     @on nearbyRefresh: ->
-      $('body').append "<br />received a nearby session update! w. nearby: #{JSON.stringify(@data.nearby)}"
+      $('#swypMessages').append "<br />received a nearby session update! w. nearby: #{JSON.stringify(@data.nearby)}"
       peers = @data.nearby
       graph = {nodes:[{userName:"",userImageURL:"", friend:true}], links:[]}
       i = 1
@@ -99,10 +99,10 @@
 
 
     @on updateRequest: ->
-      $('body').append "<br />update requested!"
+      $('#swypMessages').append "<br />update requested!"
       makeStatusUpdate()
 
     @on dataAvailable: ->
-      $('body').append "<img src='#{@data.contentURL}' alt='imgID#{@data.id} of type #{@data.contentMIME}'/>"
+      $('#swypMessages').append "<img src='#{@data.contentURL}' alt='imgID#{@data.id} of type #{@data.contentMIME}'/>"
      
     @connect()

@@ -20,3 +20,5 @@ div 'swypStatusControls', style: 'position: relative; float: right',  ->
 div 'swypOutControls', ->
   input id: 'recipient_input', type: 'text', name: 'recipient_input', placeholder: 'recipient publicID or empty for nearby', size: 50
   input id: 'swypOut_button', type: 'button', value: "swyp out!"
+
+div '#swypMessages', ->

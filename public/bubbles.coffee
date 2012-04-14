@@ -14,6 +14,8 @@ swyp =
     default: "Drag the content onto the person you want to send it to."
     drop:    "Drop to send."
     sending: "Sending now..."
+  pending: [] #any pending content for receipt
+  canSwypIn: true #turn off to disable swyp ins
 
 isTouchDevice = "ontouchstart" of document.documentElement
 
@@ -167,6 +169,24 @@ swyp.setupBubbles = (json)->
         d.x = if @x then d.x + (@x - d.x) * (damper + 0.71) * e.alpha else 400
         d.y = if @y then d.y + (@y - d.y) * (damper + 0.71) * e.alpha else 400
       "translate(#{d.x},#{d.y})"
+
+# expects an object: {objectID: 1, userName:'Ethan', thumbnailURL: 'http://...', fullURL:
+# 'http://...'}
+swyp.addPending = (item)->
+  # make sure not a duplicate
+  for obj in swyp.pending
+    if obj.objectID is item.objectID
+      false
+
+  swyp.pending.push item
+  $elem = $('<div/>').addClass('swyp_thumb').attr('id', "obj_#{objectID}")
+  $link = $('<a/>').addClass('swyp_link').attr('href', item.fullURL)
+  $img = $('<img/>').attr('src', item.thumbnailURL)
+  $elem.append($link.append($img))
+  $('body').append $elem
+
+swyp.demoObj = (fakeID)->
+  {objectID: fakeID, userName: 'Ethan Sherbondy', thumbnailURL: 'https://www.google.com/logos/2012/doisneau12-sr.png', fullURL: 'https://www.google.com/logos/2012/doisneau12-hp.jpg'}
 
 swyp.initialize = (json)->
   window.addEventListener "message", @receiveMessage, false

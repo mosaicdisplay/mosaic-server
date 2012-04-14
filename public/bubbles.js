@@ -17,7 +17,9 @@
       "default": "Drag the content onto the person you want to send it to.",
       drop: "Drop to send.",
       sending: "Sending now..."
-    }
+    },
+    pending: [],
+    canSwypIn: true
   };
 
   isTouchDevice = "ontouchstart" in document.documentElement;
@@ -186,6 +188,30 @@
         return "translate(" + d.x + "," + d.y + ")";
       });
     });
+  };
+
+  swyp.addPending = function(item) {
+    var $elem, $img, $link, obj, _i, _len, _ref;
+    _ref = swyp.pending;
+    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+      obj = _ref[_i];
+      if (obj.objectID === item.objectID) false;
+    }
+    swyp.pending.push(item);
+    $elem = $('<div/>').addClass('swyp_thumb').attr('id', "obj_" + objectID);
+    $link = $('<a/>').addClass('swyp_link').attr('href', item.fullURL);
+    $img = $('<img/>').attr('src', item.thumbnailURL);
+    $elem.append($link.append($img));
+    return $('body').append($elem);
+  };
+
+  swyp.demoObj = function(fakeID) {
+    return {
+      objectID: fakeID,
+      userName: 'Ethan Sherbondy',
+      thumbnailURL: 'https://www.google.com/logos/2012/doisneau12-sr.png',
+      fullURL: 'https://www.google.com/logos/2012/doisneau12-hp.jpg'
+    };
   };
 
   swyp.initialize = function(json) {
