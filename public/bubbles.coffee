@@ -178,7 +178,7 @@ swyp.addPending = (item)->
   # make sure not a duplicate
   for obj in swyp.pending
     if obj.objectID is item.objectID
-      false
+      return false
 
   swyp.pending.push item
   $elem = $('<a/>').addClass('swyp_thumb').attr('id', "obj_#{item.objectID}")
@@ -189,21 +189,22 @@ swyp.addPending = (item)->
   $elem.append $span
   $('body').append $elem
 
-  # align all the objects. Must go through all in case of deletion
-  i = 0
-  for obj in swyp.pending
-    $obj = $("#obj_#{obj.objectID}")
-    $obj.removeClass('top right bottom left')
+  i = swyp.pending.length
+  $elem.removeClass('top right bottom left')
+  offset_margin = if i % 2 is 0 then 'left' else 'top'
+  switch i % 4
+    when 0 then $elem.addClass 'top'
+    when 1 then $elem.addClass 'right'
+    when 2 then $elem.addClass 'bottom'
+    when 3 then $elem.addClass 'left'
 
-    switch i % 4
-      when 0 then $obj.addClass 'top'
-      when 1 then $obj.addClass 'right'
-      when 2 then $obj.addClass 'bottom'
-      when 3 then $obj.addClass 'left'
-
-    i += 1
+  offset_base = Math.floor(i/4)
+  offset_sign = if offset_base % 2 is 0 then -1 else 1
+  offset = offset_sign*(60+Math.floor(Math.random()*180))
+  $elem.css("margin-#{offset_margin}", "+=#{offset}")
 
 swyp.demoObj = (fakeID)->
+  fakeID ?= Math.floor(Math.random()*101)
   {objectID: fakeID, userName: 'Ethan Sherbondy', thumbnailURL: 'https://www.google.com/logos/2012/doisneau12-sr.png', fullURL: 'https://www.google.com/logos/2012/doisneau12-hp.jpg'}
 
 swyp.initialize = (json)->

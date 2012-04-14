@@ -193,11 +193,11 @@
   };
 
   swyp.addPending = function(item) {
-    var $elem, $img, $obj, $span, i, obj, _i, _j, _len, _len2, _ref, _ref2, _results;
+    var $elem, $img, $span, i, obj, offset, offset_base, offset_margin, offset_sign, _i, _len, _ref;
     _ref = swyp.pending;
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
       obj = _ref[_i];
-      if (obj.objectID === item.objectID) false;
+      if (obj.objectID === item.objectID) return false;
     }
     swyp.pending.push(item);
     $elem = $('<a/>').addClass('swyp_thumb').attr('id', "obj_" + item.objectID).attr('href', item.fullURL);
@@ -206,32 +206,30 @@
     $elem.append($img);
     $elem.append($span);
     $('body').append($elem);
-    i = 0;
-    _ref2 = swyp.pending;
-    _results = [];
-    for (_j = 0, _len2 = _ref2.length; _j < _len2; _j++) {
-      obj = _ref2[_j];
-      $obj = $("#obj_" + obj.objectID);
-      $obj.removeClass('top right bottom left');
-      switch (i % 4) {
-        case 0:
-          $obj.addClass('top');
-          break;
-        case 1:
-          $obj.addClass('right');
-          break;
-        case 2:
-          $obj.addClass('bottom');
-          break;
-        case 3:
-          $obj.addClass('left');
-      }
-      _results.push(i += 1);
+    i = swyp.pending.length;
+    $elem.removeClass('top right bottom left');
+    offset_margin = i % 2 === 0 ? 'left' : 'top';
+    switch (i % 4) {
+      case 0:
+        $elem.addClass('top');
+        break;
+      case 1:
+        $elem.addClass('right');
+        break;
+      case 2:
+        $elem.addClass('bottom');
+        break;
+      case 3:
+        $elem.addClass('left');
     }
-    return _results;
+    offset_base = Math.floor(i / 4);
+    offset_sign = offset_base % 2 === 0 ? -1 : 1;
+    offset = offset_sign * (60 + Math.floor(Math.random() * 180));
+    return $elem.css("margin-" + offset_margin, "+=" + offset);
   };
 
   swyp.demoObj = function(fakeID) {
+    if (fakeID == null) fakeID = Math.floor(Math.random() * 101);
     return {
       objectID: fakeID,
       userName: 'Ethan Sherbondy',
