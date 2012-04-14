@@ -206,23 +206,8 @@ swyp.addPending = (item)->
 
   # bind events
   events = eventsForDevice
-  eleft = $elem.css('left')
-  etop = $elem.css('top')
-  $elem.on(events[0], (e)->
-    console.log 'touch started'
-    $('body').on(events[1], (e)->
-      ex = if e.touches then e.touches[0].pageX else e.pageX
-      ey = if e.touches then e.touches[0].pageY else e.pageY
-      $elem.offset({top:ey-25, left:ex-25})
-      console.log 'mousemoved'
-    ).on(events[2], (e)->
-      $('body').off(events[1])
-      $elem.css({'left':eleft, 'top':etop})
-      console.log 'touch ended'
-    )
-  ).on('click', (e)->
-    e.preventDefault()
-  )
+  $elem.on('click', (e)->
+    confirm "Accept content from #{item.userName}?"
 
 swyp.demoObj = (fakeID)->
   fakeID ?= Math.floor(Math.random()*101)
