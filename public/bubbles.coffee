@@ -55,7 +55,23 @@ checkForCollisions = (ex, ey, triggerSwypOut) ->
   $("#instructions").text swypUI.instructions[(if (collisionCount > 0) then "drop" else "default")]
 
 swypUI.swypOut = (d)->
+  console.log d
   # alex, this is where you put relevant swyp out code
+  pngFile = {
+    contentURL : "http://swyp.us/guide/setupPhotos/setup1.png"
+    contentMIME : imagePNGType
+  }
+
+  jpegFile = {
+    contentURL : "http://fluid.media.mit.edu/people/natan/media/swyp/swyp.jpg"
+    contentMIME : imageJPEGType
+  }
+
+  base64PreviewImage = "/9j/4AAQSkZJRgABAgAAZABkAAD/7AARRHVja3kAAQAEAAAADQAA/+4ADkFkb2JlAGTAAAAAAf/bAIQAExAQGBEYJhcXJjAlHiUwLCUkJCUsOzMzMzMzO0M+Pj4+Pj5DQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQwEUGBgfGx8lGBglNCUfJTRDNCkpNENDQ0AzQENDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0ND/8AAEQgAOAAoAwEiAAIRAQMRAf/EAHoAAAEFAQEAAAAAAAAAAAAAAAACAwQGBwEFAQADAQEAAAAAAAAAAAAAAAAAAgMBBBAAAgEDAgMGBAcAAAAAAAAAAQIAERIDITFBsQRRYZEiMgWh0UJycYFSYpITFBEAAwACAgMBAAAAAAAAAAAAAAERIQJREkFSA4H/2gAMAwEAAhEDEQA/AKvLd0/snQ5caM7UJ3Fe6VQrwmmp5EQWg+VfGkb6puRwNGlaqVzL7J0SoSpqwFQLp4PXe25eiKkgnG4uR+75iaLRSNRrIXV+348mF1YkqVOhPdJ6dtXl1DbRrChnNBwhOiE6iAoiaemMtjTX6V5TMiJqOJLsaV4BeUT6eBtRkmh18IrI1+JtNlblHTiFdYnKKYm+1uUj5KGWU0hFCE64QFRz/RlH1t/IyYPcWvLnGrXAVBPZUHhQVB4AbRWHrXAvtLWooZhpVrhq2+loC9/5zG36mxckI58wFf7G1/efnOjNmatHc0FT5jHOn6xsC2BQwrdQ7HVT8LfjHz1+RVqcejUoWbRrbfVp5j5d9PVtB31D9POYHfgTCTm6+putqWvu2HqCgagcLa105whXwEXJDEcTKqKy21LUq11DT9O2xhCO5MiIkr7i+O0BRRQB6jwt27PT5h9VT2yM+UuioQBbca/dyHj+MIRF0uBn2g1CEJQU/9k="
+  
+  swypTypeGroups = [pngFile, jpegFile]
+
+  swyp.makeSwypOut d.userID, base64PreviewImage, swypTypeGroups
   alert "TRIGGERING SWYP OUT TO: #{JSON.stringify(d)} with data: #{JSON.stringify(swypUI.dataToSend)}"
 
 swypUI.hideSwyp = ->
@@ -190,11 +206,12 @@ swypUI.setupBubbles = (json)->
       "translate(#{d.x},#{d.y})"
 
 
-# Alex, this is how you add a new incoming swyp!
+# Ethan, cool thanks, this is how you add a new incoming swyp!
 # expects an object: {objectID: 1, 
 #                     userName:'Ethan', 
+#                     userImageURL: 'http://', # here's a gravitar link or whatever of the user
 #                     thumbnailURL: 'http://...', 
-#                     fullURL: 'http://...'}
+#                     #fullURL: 'http://...'} #this is found asynchronously, and is not needed
 swypUI.addPending = (item)->
   # will not add any swypIns if you turn canSwypIn off!
   if swypUI.canSwypIn
@@ -230,9 +247,9 @@ swypUI.addPending = (item)->
     events = eventsForDevice
     $elem.on(events[2], (e)->
       if confirm "Accept content from #{item.userName}?"
-        console.log "CONFIRMED"
-        
-        window.open item.fullURL, '_blank'
+        #swyp dataAvailableCallback set on initialize
+        console.log "accepting from item #{item}"
+        swyp.makeSwypIn item.objectID
       $(this).hide() # either way, hide the content afterwards
     ).on('click', (e)-> e.preventDefault())
 
@@ -243,6 +260,8 @@ swypUI.demoObj = (fakeID)->
 swypUI.initialize = (json)->
   window.addEventListener "message", @receiveMessage, false
   $("#instructions").text @instructions["default"]
+  swyp.dataAvailableCallback = (swypItem, err) =>
+    window.open swypItem.contentURL, '_blank'
   @setupBubbles json
   @registerEvents()
   @addPending @demoObj()
