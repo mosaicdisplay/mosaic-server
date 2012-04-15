@@ -93,7 +93,7 @@ swypApp = require('zappa').app ->
       @next()
   
   @include 'swypClient'
-  
+  @include 'swypUI'
   #process.on 'uncaughtException', (err) =>
   #  console.log "uncaught exception #{err} not terminating app"
 

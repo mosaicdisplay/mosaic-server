@@ -8,7 +8,7 @@
             '/d3.v2.min',
             '/force',
             '/jquery-1.7.2.min',
-            '/bubbles']
+            '/swypUI']
 
 h1 "#instructions",
 img "#preview",
