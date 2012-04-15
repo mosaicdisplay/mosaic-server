@@ -1,5 +1,6 @@
 @include = ->
   @client '/swyp.js': ->
+    window.swyp = {}
     
     #type defs
     imageJPEGType = "image/jpeg"
@@ -8,7 +9,7 @@
     swypObjByID = []
     userLocation = [44.680997,10.317557] # a lng/lat pair
 
-    supportedContentTypes = [imageJPEGType, imagePNGType] #in order of preference more->less
+    swyp.supportedContentTypes = [imageJPEGType, imagePNGType] #in order of preference more->less
 
     setLocation = (pos)->
       console.log "updated location"
@@ -52,16 +53,18 @@
       if swypObjByID[swypObjID]?
         console.log "swyp in started for #{swypObjID}"
         swypObj = swypObjByID[swypObjID]
-        commonTypes = supportedContentTypes.intersect(swypObj.availableMIMETypes)
+        commonTypes = swyp.supportedContentTypes.intersect(swypObj.availableMIMETypes)
         if commonTypes[0]?
           @emit swypIn: {token: localSessionToken(), id: swypObj.id, contentMIME:commonTypes[0]}
         else
           console.log "no common filetypes for swyp"
       else
         console.log "swypObj not stored for id#{swypObjID}"
+    window.swyp.makeSwypIn = makeSwypIn
 
     makeStatusUpdate = =>
       @emit statusUpdate: {token: localSessionToken(), location: userLocation}
+    window.swyp.makeStatusUpdate = makeStatusUpdate
  
     @on swypInAvailable: ->
       console.log @data
@@ -71,6 +74,7 @@
       $('#swypMessages').append "<input id= 'button_#{@data.id}', type= 'button', value='swyp in!'>"
       $("#button_#{@data.id}").bind 'click', =>
           makeSwypIn(@data.id)
+      swypClient.addPending {objectID: @data.id, userName: @data.swypSender.userName, userImageURL: @data.swypSender.userImageURL, thumbnailURL: @data.previewImageURL}
 
 
     @on swypOutPending: ->

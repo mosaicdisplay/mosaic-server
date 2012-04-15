@@ -1,4 +1,4 @@
-swyp =
+swypUI =
   x: 0 # the x pos of the mouse/touch event
   y: 0 # y pos...
   w: 0 # the svg width
@@ -24,7 +24,7 @@ realTouches = (elem) ->
   if isTouchDevice then d3.touches(elem)[0] else d3.mouse(elem)
 
 # (re)display the bubbles, centered at the provided coordinates
-swyp.showBubblesAt = (ex, ey) ->
+swypUI.showBubblesAt = (ex, ey) ->
   $('#instructions').show()
   @vis.attr "class", "visible"
   @isVisible = true
@@ -43,22 +43,22 @@ friendClass = (d) -> if d.friend then "friend" else "stranger"
 # see if mouse/finger drag collides with a person bubble
 checkForCollisions = (ex, ey, triggerSwypOut) ->
   collisionCount = 0
-  swyp.node.each (d, i) ->
+  swypUI.node.each (d, i) ->
     collision = collides(this, ex, ey)
     collisionCount += 1 if collision
     d3.select(this).attr "class", (if collision then "hovered" else friendClass(d))
 
     # this is how swyp outs are triggered!
-    if collision and triggerSwypOut then swyp.swypOut d
+    if collision and triggerSwypOut then swypUI.swypOut d
 
   # update the instructions if dragging over a person
-  $("#instructions").text swyp.instructions[(if (collisionCount > 0) then "drop" else "default")]
+  $("#instructions").text swypUI.instructions[(if (collisionCount > 0) then "drop" else "default")]
 
-swyp.swypOut = (d)->
+swypUI.swypOut = (d)->
   # alex, this is where you put relevant swyp out code
-  alert "TRIGGERING SWYP OUT TO: #{JSON.stringify(d)} with data: #{JSON.stringify(swyp.dataToSend)}"
+  alert "TRIGGERING SWYP OUT TO: #{JSON.stringify(d)} with data: #{JSON.stringify(swypUI.dataToSend)}"
 
-swyp.hideSwyp = ->
+swypUI.hideSwyp = ->
   console.log 'hiding swyp'
   @node.attr "class", friendClass
   @vis.attr "class", "hidden"
@@ -69,7 +69,7 @@ swyp.hideSwyp = ->
   if @sourceWindow? then @sourceWindow.postMessage "HIDE_SWYP", "*"
 
 # resize the force graph layout when the window is resized (happens each tick)
-swyp.resize = ->
+swypUI.resize = ->
   @w = @body.attr("width")
   @h = @body.attr("height")
   @force.size [ @w, @h ]
@@ -86,33 +86,33 @@ mouseEvents = [ "mousedown", "mousemove", "mouseup" ]
 eventsForDevice = (if isTouchDevice then touchEvents else mouseEvents)
 
 # register for touch or mouse events based on device
-swyp.registerEvents = ->
+swypUI.registerEvents = ->
   events = eventsForDevice
   @body.on(events[0], ->
     bod = this
     d3.event.preventDefault()
     d3.event.stopPropagation()
     xy = realTouches(bod)
-    swyp.showBubblesAt xy[0], xy[1]
+    swypUI.showBubblesAt xy[0], xy[1]
   ).on(events[1], (e) ->
     # only handle mouse moves if bubbles are visible
-    if swyp.isVisible
+    if swypUI.isVisible
       xy = realTouches(this)
       $("#preview").show()
       positionPreview xy[0], xy[1]
       checkForCollisions xy[0], xy[1], false
   ).on(events[2], ->
-    if swyp.isVisible
+    if swypUI.isVisible
       xy = realTouches(this)
       # trigger swyp out on the collided people
       checkForCollisions xy[0], xy[1], true
-      swyp.hideSwyp()
+      swypUI.hideSwyp()
   )
 
 # respond to message when in iframe
-swyp.receiveMessage = (event) ->
+swypUI.receiveMessage = (event) ->
   console.log "RECEIVED: " + JSON.stringify(event.data)
-  swyp.sourceWindow = event.source
+  swypUI.sourceWindow = event.source
   eType = event.data.e
   touches = event.data.touches
   ex = touches[0] - 100
@@ -122,12 +122,12 @@ swyp.receiveMessage = (event) ->
   if eType is "dragstart"
     console.log "show bubbles"
     positionPreview ex, ey
-    swyp.dataToSend = event.data
+    swypUI.dataToSend = event.data
     $("#preview").attr "src", event.data.img
-    swyp.showBubblesAt ex, ey
+    swypUI.showBubblesAt ex, ey
 
 # setup the bubbles
-swyp.setupBubbles = (json)->
+swypUI.setupBubbles = (json)->
   if not @body then @body = d3.select("body")
   
   if @vis then $('svg').remove() # hack! BAD
@@ -195,15 +195,15 @@ swyp.setupBubbles = (json)->
 #                     userName:'Ethan', 
 #                     thumbnailURL: 'http://...', 
 #                     fullURL: 'http://...'}
-swyp.addPending = (item)->
+swypUI.addPending = (item)->
   # will not add any swypIns if you turn canSwypIn off!
-  if swyp.canSwypIn
+  if swypUI.canSwypIn
     # make sure not a duplicate
-    for obj in swyp.pending
+    for obj in swypUI.pending
       if obj.objectID is item.objectID
         return false
 
-    swyp.pending.push item
+    swypUI.pending.push item
     $elem = $('<a/>').addClass('swyp_thumb').attr('id', "obj_#{item.objectID}")
                                             .attr('href', item.fullURL)
     $img = $('<img/>').attr('src', item.thumbnailURL)
@@ -212,7 +212,7 @@ swyp.addPending = (item)->
     $elem.append $span
     $('body').append $elem
 
-    i = swyp.pending.length
+    i = swypUI.pending.length
     $elem.removeClass('top right bottom left')
     offset_margin = if i % 2 is 0 then 'left' else 'top'
     switch i % 4
@@ -231,19 +231,20 @@ swyp.addPending = (item)->
     $elem.on(events[2], (e)->
       if confirm "Accept content from #{item.userName}?"
         console.log "CONFIRMED"
+        
         window.open item.fullURL, '_blank'
       $(this).hide() # either way, hide the content afterwards
     ).on('click', (e)-> e.preventDefault())
 
-swyp.demoObj = (fakeID)->
+swypUI.demoObj = (fakeID)->
   fakeID ?= Math.floor(Math.random()*101)
   {objectID: fakeID, userName: 'Ethan Sherbondy', thumbnailURL: 'https://www.google.com/logos/2012/doisneau12-sr.png', fullURL: 'https://www.google.com/logos/2012/doisneau12-hp.jpg'}
 
-swyp.initialize = (json)->
+swypUI.initialize = (json)->
   window.addEventListener "message", @receiveMessage, false
   $("#instructions").text @instructions["default"]
   @setupBubbles json
   @registerEvents()
   @addPending @demoObj()
 
-window.swypClient = swyp
+window.swypClient = swypUI
