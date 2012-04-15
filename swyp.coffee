@@ -409,7 +409,7 @@ swypApp = require('zappa').app ->
   
   @on statusUpdate: ->
     tokenValidate @data.token, (user, session) =>
-      if user == null
+      if session? == false
         @emit unauthorized: {}
         return
       session.socketID = @id
@@ -428,7 +428,7 @@ swypApp = require('zappa').app ->
 
   @on swypOut: ->
     tokenValidate @data.token, (user, session) =>
-      if user == null
+      if session? == false
         @emit unauthorized: {}
         return
       #implement function to evaluate user token and abort if invalid
@@ -511,7 +511,7 @@ swypApp = require('zappa').app ->
   ###
   @on swypIn: ->
     tokenValidate @data.token, (user, session) =>
-      if user == null
+      if session? == false
         @emit unauthorized: {}
         return
       contentID   = @data.id
@@ -536,7 +536,7 @@ swypApp = require('zappa').app ->
      
   @on uploadCompleted: ->
     tokenValidate @data.token, (user, session) =>
-      if user == null
+      if session? == false
         @emit unauthorized: {}
         return
       contentID   = @data.id
