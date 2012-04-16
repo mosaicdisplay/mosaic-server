@@ -77,7 +77,7 @@
       
       swypTypeGroups = [pngFile, jpegFile]
 
-      alert "(switch userNmae with userID) DID UPDATE: TRIGGERING SWYP OUT TO: #{JSON.stringify(d)} with data: #{JSON.stringify(swypUI.dataToSend)}"
+      #alert "(switch userNmae with userID) DID UPDATE: TRIGGERING SWYP OUT TO: #{JSON.stringify(d)} with data: #{JSON.stringify(swypUI.dataToSend)}"
       swyp.makeSwypOut d.userID, base64PreviewImage, swypTypeGroups
 
     swypUI.hideSwyp = ->
@@ -267,9 +267,10 @@
       window.addEventListener "message", @receiveMessage, false
       $("#instructions").text @instructions["default"]
       swyp.dataAvailableCallback = (swypItem, err) =>
+        console.log "callbacking for swyp item#{swypItem}"
         window.open swypItem.contentURL, '_blank'
       @setupBubbles json
       @registerEvents()
-      @addPending @demoObj()
+      #@addPending @demoObj()
 
     window.swypClient = swypUI

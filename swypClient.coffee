@@ -48,10 +48,10 @@
     localSessionToken = =>
       return $("#token_input").val()
     
-    makeSwypOut = (swypRecipient, previewBase64Image, swypTypeGroup) =>
+    makeSwypOut = (swypRecipient, previewBase64Image, swypTypeGroups) =>
         toRecipient = swypRecipient.trim()
         console.log "swyp goes to recip #{toRecipient}"
-        @emit swypOut: {token: localSessionToken(), to: toRecipient, previewImageJPGBase64: previewBase64Image, swypTypeGroups}
+        @emit swypOut: {token: localSessionToken(), to: toRecipient, previewImageJPGBase64: previewBase64Image,typeGroups: swypTypeGroups}
     window.swyp.makeSwypOut = makeSwypOut
 
     #the client makes a swyp in, using the to: property if they wish to specifiy it to a specifc account._id
@@ -101,7 +101,7 @@
       graph = {nodes:[{userName:"",userImageURL:"", friend:true}], links:[]}
       i = 1
       for peer in peers
-        graph.nodes.push({userName:peer.userName, userImageURL:peer.userImageURL, friend:false})
+        graph.nodes.push({userName:peer.userName, userID:peer.publicID, userImageURL:peer.userImageURL, friend:false})
         graph.links.push({source:i, target:0})
         i += 1
 
@@ -113,6 +113,7 @@
       makeStatusUpdate()
 
     @on dataAvailable: ->
+      console.log "data available #{@data.contentURL}"
       swyp.dataAvailableCallback @data, null
       $('#swypMessages').append "<img src='#{@data.contentURL}' alt='imgID#{@data.id} of type #{@data.contentMIME}'/>"
      
