@@ -55,18 +55,6 @@ SwypSchema = new Schema {
   typeGroups : [TypeGroup]
 }
 
-###
-Swyp Schema -- Determine whether embedded in session, or seperate
-• Swyps created on swypOut event
-• Swyps stored track:
-  - typeGroups [array of hashtables]
-    - URL location
-    - Requesting userIDs
-  - swyp-out ownerID
-  - expiration date
-  - previewImage
-###
-
 Account = mongoose.model 'Account', AccountSchema
 Session = mongoose.model 'Account.sessions', SessionSchema
 Swyp = mongoose.model 'Swyp', SwypSchema
