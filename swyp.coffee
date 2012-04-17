@@ -1,4 +1,5 @@
 primaryHost = "https://swypserver.herokuapp.com"
+console.log process.env
 secrets = require ('./secrets')
 
 mongoose     = require('mongoose')
@@ -7,13 +8,6 @@ Schema = mongoose.Schema
 
 ObjectId = mongoose.SchemaTypes.ObjectId
 User = null
-
-UserSchema = new Schema {}
-UserSchema.plugin mongooseAuth, {
-  everymodule:
-    everyauth:
-      User: -> User
-}
 
 #sessions are contained within accounts, and represent an active connection to the swypServer
 #sessions contain the socket.io socket id via 'socketID', and the current location of the user
@@ -40,7 +34,7 @@ AccountSchema.plugin mongooseAuth, {
   everymodule: {everyauth: User: -> Account}
   facebook:
     everyauth:
-      myHostname: primaryHost
+      myHostname: "127.0.0.1:3000"
       appId: secrets.fb.id
       appSecret: secrets.fb.secret
       redirectPath: '/'
@@ -81,12 +75,15 @@ swypApp = require('zappa').app ->
   @use 'bodyParser', 'static', 'cookies', 'cookieParser', session: {secret: secrets.sessionSecret}
   @use  mongooseAuth.middleware()
 
+
   @enable 'default layout' # this is hella convenient
   crypto = require('crypto')
 
   @io.set("transports", ["xhr-polling"])
   @io.set("polling duration", 10)
  
+  mongooseAuth.helpExpress @app
+
   @get '*': ->
     if @request.headers['host'] == '127.0.0.1:3000'
       @next()
@@ -331,7 +328,7 @@ swypApp = require('zappa').app ->
           req.response.cookie 'sessiontoken', session.token, {httpOnly: true, secure: true, maxAge: 90000000000 }
         req.redirect '/'
   
-  @get '/login': ->
+  @get '/logins': ->
     @render login: {}
   
   @get '/token': ->
