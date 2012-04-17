@@ -1,5 +1,6 @@
 primaryHost = "https://swypserver.herokuapp.com"
-console.log process.env
+#if process.env.NODE_ENV? == false || process.env.NODE_ENV != "PRODUCTION"
+#primaryHost = "http://127.0.0.1:3000"
 secrets = require ('./secrets')
 
 mongoose     = require('mongoose')
@@ -7,7 +8,6 @@ mongooseAuth = require('mongoose-auth')
 Schema = mongoose.Schema
 
 ObjectId = mongoose.SchemaTypes.ObjectId
-User = null
 
 #sessions are contained within accounts, and represent an active connection to the swypServer
 #sessions contain the socket.io socket id via 'socketID', and the current location of the user
@@ -22,6 +22,7 @@ SessionSchema = new Schema {
 #the userIDs are unique, and can be universal identifiers (more internal than userName)
 #the userName is the display name for other users to see
 #the account document contains the session embeddedDocument 
+Account = null
 AccountSchema = new Schema {
   userImageURL : String,
   userID : { type: String, required: true, index: { unique: true }},
@@ -34,7 +35,7 @@ AccountSchema.plugin mongooseAuth, {
   everymodule: {everyauth: User: -> Account}
   facebook:
     everyauth:
-      myHostname: "127.0.0.1:3000"
+      myHostname: primaryHost
       appId: secrets.fb.id
       appSecret: secrets.fb.secret
       redirectPath: '/'
@@ -75,14 +76,14 @@ swypApp = require('zappa').app ->
   @use 'bodyParser', 'static', 'cookies', 'cookieParser', session: {secret: secrets.sessionSecret}
   @use  mongooseAuth.middleware()
 
-
+  mongooseAuth.helpExpress @app
+  
   @enable 'default layout' # this is hella convenient
   crypto = require('crypto')
 
   @io.set("transports", ["xhr-polling"])
   @io.set("polling duration", 10)
  
-  mongooseAuth.helpExpress @app
 
   @get '*': ->
     if @request.headers['host'] == '127.0.0.1:3000'
@@ -332,7 +333,7 @@ swypApp = require('zappa').app ->
     @render login: {}
   
   @get '/token': ->
-    @redirect '/login'
+    @redirect '/logins'
 
   @post '/token', (req, res) ->
     reqUserID  = req.body.user_id
@@ -592,7 +593,7 @@ swypApp = require('zappa').app ->
       ref.parentNode.insertBefore js, ref
     )(document)
 
-  #client code moved to swypClient.coffee
+
 
 port = if process.env.PORT > 0 then process.env.PORT else 3000
 swypApp.app.listen port
