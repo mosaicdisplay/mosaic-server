@@ -1,3 +1,6 @@
+primaryHost = "https://swypserver.herokuapp.com"
+secrets = require ('./secrets')
+
 mongoose     = require('mongoose')
 mongooseAuth = require('mongoose-auth')
 Schema = mongoose.Schema
@@ -33,6 +36,17 @@ AccountSchema = new Schema {
   sessions : [SessionSchema]
 }
 
+AccountSchema.plugin mongooseAuth, {
+  everymodule: {everyauth: User: -> Account}
+  facebook:
+    everyauth:
+      myHostname: primaryHost
+      appId: secrets.fb.id
+      appSecret: secrets.fb.secret
+      redirectPath: '/'
+}
+
+
 #each contentType the swyp-out supports generates one of these
 #typeGroups are fufilled as necessary to honor requests through swyp-ins
 TypeGroupSchema = new Schema {
@@ -62,10 +76,11 @@ TypeGroup = mongoose.model 'Swyp.typeGroups', TypeGroupSchema
 `Array.prototype.unique = function() {    var o = {}, i, l = this.length, r = [];    for(i=0; i<l;i+=1) o[this[i]] = this[i];    for(i in o) r.push(o[i]);    return r;};`
 
 swypApp = require('zappa').app ->
-  @include 'secrets'
-  mongoose.connect(@mongoDBConnectURLSecret)
+  mongoose.connect(secrets.mongoDBConnectURLSecret)
+  #removed , 'app.router' for mongooseAuth
+  @use 'bodyParser', 'static', 'cookies', 'cookieParser', session: {secret: secrets.sessionSecret}
+  @use  mongooseAuth.middleware()
 
-  @use 'bodyParser', 'app.router', 'static', 'cookies', 'cookieParser', session: {secret: @sessionSecret}
   @enable 'default layout' # this is hella convenient
   crypto = require('crypto')
 
@@ -76,7 +91,7 @@ swypApp = require('zappa').app ->
     if @request.headers['host'] == '127.0.0.1:3000'
       @next()
     else if @request.headers['x-forwarded-proto']!='https'
-      @redirect "https://swypserver.herokuapp.com#{@request.url}"
+      @redirect "#{primaryHost}#{@request.url}"
     else
       @next()
   
@@ -447,7 +462,7 @@ swypApp = require('zappa').app ->
         if error != null
           console.log "didFailSave", error
           return
-        previewImageURL = "https://swypserver.herokuapp.com/preview/#{nextSwyp._id}"
+        previewImageURL = "#{primaryHost}/preview/#{nextSwyp._id}"
         swypOutPacket = {id: nextSwyp._id, swypSender: fromSender, dateCreated: nextSwyp.dateCreated, dateExpires: nextSwyp.dateExpires, availableMIMETypes: typeGroupsToSend, previewImageURL: previewImageURL}
         @emit swypOutPending: swypOutPacket #this sends only the MIMES
         console.log "new swypOut saved"
