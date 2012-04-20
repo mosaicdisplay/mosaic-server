@@ -540,13 +540,15 @@ swypApp = require('zappa').app ->
   @coffee '/login.js': ->
     $(->
       $('#user_id').on 'blur', (e)->
-        val = CryptoJS.MD5($(this).val().replace(/\s*/g,'').toLowerCase())
+        trimmed_mail = $(this).val().replace(/\s*/g,'').toLowerCase()
+        val = CryptoJS.MD5(trimmed_mail)
         $('#avatar').attr('src',"http://gravatar.com/avatar/#{val}")
 
       $('#account').on 'mousedown', (e)->
         e.stopPropagation()
       $('#login_button').on 'click', (e)->
         e.preventDefault()
+        e.stopPropagation()
         if not $(this).hasClass 'active'
           if not $('#login').length
             $.get '/logins?ajax=true', (data)->
