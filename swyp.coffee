@@ -330,7 +330,7 @@ swypApp = require('zappa').app ->
         req.redirect '/'
   
   @get '/logins': ->
-    @render login: {}
+    @render login: {ajax: @query.ajax?}
   
   @get '/token': ->
     @redirect '/logins'
@@ -345,33 +345,20 @@ swypApp = require('zappa').app ->
         req.render login: {userID: matchingUser.userID, token: previousSession.token}
       
   @view login: ->
-    @title = 'login'
-    @stylesheets = ['/style']
-    @scripts = ['/zappa/jquery','/zappa/zappa', '/facebook']
-
-    if process.env.NODE_ENV is 'production'
-      coffeescript ->
-        window.app_id = '359933034051162'
-    else
-      coffeescript ->
-        window.app_id = '194436507332185'
+    if not @ajax
+      @title = 'login'
+      @stylesheets = ['/style']
+      @scripts = ['/zappa/jquery','/zappa/zappa', '/login', '/md5']
 
     if @token != undefined && @userID != undefined
-      p "{\"userID\" : \"#{@userID}\", \"token\" : \"#{@token}\"}"
+      div '#login', ->
+        p "{\"userID\" : \"#{@userID}\", \"token\" : \"#{@token}\"}"
     else
-      form method: 'post', action: '/login', ->
+      form '#login', method: 'post', action: '/login', ->
+        img '#avatar', href: '#'
         input id: 'user_id', type: 'text', name: 'user_id', placeholder: 'login userid/email', size: 50
         input id: 'user_pass', type: 'text', name: 'user_pass', placeholder: 'login pass', size: 50
-        input id: 'fb_uid', type: 'hidden', name: 'fb_uid'
-        input id: 'fb_token', type: 'hidden', name: 'fb_token'
         button 'get token'
-
-    div '#fb-root', ->
-      img '#fb_photo.hidden', src: ''
-      a '#logout.hidden', href: "#", ->
-        'Unlink Facebook account'
-      div '#fb-login.fb-login-button.hidden', ->
-        'Link account with Facebook'
   
   @get '/preview/:id': (req, res) ->
     swypID = @params.id
@@ -550,50 +537,29 @@ swypApp = require('zappa').app ->
          uploadURL: uploadURL}
       #io.sockets.sockets[sid].json.send -> #send to particularly waiting clients
 
-  @coffee '/facebook.js': ->
-    handleFBStatus = (res)->
-      switch res.status
-        when 'connected'
-          uid = res.authResponse.userID
-          access_token = res.authResponse.accessToken
-          console.log "authorized with uid: #{uid} and access token: #{access_token}"
-          $("#fb_photo").removeClass("hidden").attr("src", "http://graph.facebook.com/#{uid}/picture")
-          $('#fb_uid').val uid
-          $('#fb_token').val access_token
-          $('#logout').removeClass('hidden')
-          $('#fb-login').addClass('hidden')
-        when 'not_authorized'
-          console.log 'user is logged in, but has not authorized app'
-        else # user is not logged in
-          $('#logout').addClass('hidden')
-          $('#fb-login').removeClass('hidden')
+  @coffee '/login.js': ->
+    $(->
+      $('#user_id').on 'blur', (e)->
+        val = CryptoJS.MD5($(this).val().replace(/\s*/g,'').toLowerCase())
+        $('#avatar').attr('src',"http://gravatar.com/avatar/#{val}")
 
-    $('#logout').live 'click', (e)->
-      FB.logout (res)->
-        console.log res
+      $('#account').on 'mousedown', (e)->
+        e.stopPropagation()
+      $('#login_button').on 'click', (e)->
+        e.preventDefault()
+        if not $(this).hasClass 'active'
+          if not $('#login').length
+            $.get '/logins?ajax=true', (data)->
+              $content = jQuery data
+              $('#account').append $content
+              $('#user_id').focus()
+          else
+            $('#login').show()
+        else
+          $('#login').hide()
 
-    window.fbAsyncInit = ->
-      FB.init {
-        appId: app_id,
-        status: true, cookie: true, xfbml: true
-      }
-
-      FB.getLoginStatus handleFBStatus
-      FB.Event.subscribe 'auth.authResponseChange', handleFBStatus
-
-    
-    ((d)->
-      js  = id = 'facebook-jssdk'
-      ref = d.getElementsByTagName('script')[0]
-      if d.getElementById id then return
-      js = d.createElement 'script'
-      js.id    = id
-      js.async = true
-      js.src   = "//connect.facebook.net/en_US/all.js"
-      ref.parentNode.insertBefore js, ref
-    )(document)
-
-
+        $(this).toggleClass 'active'
+    )
 
 port = if process.env.PORT > 0 then process.env.PORT else 3000
 swypApp.app.listen port
