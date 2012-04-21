@@ -49,7 +49,7 @@
       return $("#token_input").val()
     
     makeSwypOut = (swypRecipient, previewBase64Image, swypTypeGroups) =>
-        toRecipient = swypRecipient.trim()
+        toRecipient = swypRecipient?.trim()
         console.log "swyp goes to recip #{toRecipient}"
         @emit swypOut: {token: localSessionToken(), to: toRecipient, previewImageJPGBase64: previewBase64Image,typeGroups: swypTypeGroups}
     window.swyp.makeSwypOut = makeSwypOut

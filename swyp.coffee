@@ -239,9 +239,9 @@ swypApp = require('zappa').app ->
     return ((session.expiration > new Date() || (session.expiration?) == false) && @io.sockets.socket(session.socketID)?)
   
   @post '/signup', (req, res) ->
-    userName   = req.body.user_name.trim()
-    userEmail = req.body.user_email.trim().toLowerCase()
-    userPassword = req.body.user_pass.trim()
+    userName   = req.body.user_name?.trim()
+    userEmail = req.body.user_email?.trim().toLowerCase()
+    userPassword = req.body.user_pass?.trim()
     if userName? and userPassword? and userEmail?
       newAccount = new Account {userPass: userPassword, userName: userName, userID: userEmail}
       
@@ -422,7 +422,7 @@ swypApp = require('zappa').app ->
       #implement function to evaluate user token and abort if invalid
       supportedTypes = @data.typeGroups
       previewImage = @data.previewImageJPGBase64
-      recipientTo    = @data.to.trim()
+      recipientTo    = @data.to?.trim()
       fromSender     = {publicID: user._id, userImageURL: user.userImageURL, userName: user.userName}
       swypTime       = new Date()
       swypExpire = new Date(new Date().valueOf()+50) #expires in 50 seconds

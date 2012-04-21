@@ -53,7 +53,7 @@
 
         # this is how swyp outs are triggered!
         if collision and triggerSwypOut
-          console.log ex
+          d.b64Preview = swypUI.getB64FromImgElement $("#preview")[0]
           swypUI.swypOut d
       # update the instructions if dragging over a person
       $("#instructions").text swypUI.instructions[(if (collisionCount > 0) then "drop" else "default")]
@@ -63,7 +63,6 @@
       imagePNGType = "image/png"
  
       console.log d
-      # alex, this is where you put relevant swyp out code
       pngFile = {
         contentURL : "http://swyp.us/guide/setupPhotos/setup1.png"
         contentMIME : imagePNGType
@@ -74,9 +73,9 @@
         contentMIME : imageJPEGType
       }
 
-      base64PreviewImage = "/9j/4AAQSkZJRgABAgAAZABkAAD/7AARRHVja3kAAQAEAAAADQAA/+4ADkFkb2JlAGTAAAAAAf/bAIQAExAQGBEYJhcXJjAlHiUwLCUkJCUsOzMzMzMzO0M+Pj4+Pj5DQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQwEUGBgfGx8lGBglNCUfJTRDNCkpNENDQ0AzQENDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0ND/8AAEQgAOAAoAwEiAAIRAQMRAf/EAHoAAAEFAQEAAAAAAAAAAAAAAAACAwQGBwEFAQADAQEAAAAAAAAAAAAAAAAAAgMBBBAAAgEDAgMGBAcAAAAAAAAAAQIAERIDITFBsQRRYZEiMgWh0UJycYFSYpITFBEAAwACAgMBAAAAAAAAAAAAAAERIQJREkFSA4H/2gAMAwEAAhEDEQA/AKvLd0/snQ5caM7UJ3Fe6VQrwmmp5EQWg+VfGkb6puRwNGlaqVzL7J0SoSpqwFQLp4PXe25eiKkgnG4uR+75iaLRSNRrIXV+348mF1YkqVOhPdJ6dtXl1DbRrChnNBwhOiE6iAoiaemMtjTX6V5TMiJqOJLsaV4BeUT6eBtRkmh18IrI1+JtNlblHTiFdYnKKYm+1uUj5KGWU0hFCE64QFRz/RlH1t/IyYPcWvLnGrXAVBPZUHhQVB4AbRWHrXAvtLWooZhpVrhq2+loC9/5zG36mxckI58wFf7G1/efnOjNmatHc0FT5jHOn6xsC2BQwrdQ7HVT8LfjHz1+RVqcejUoWbRrbfVp5j5d9PVtB31D9POYHfgTCTm6+putqWvu2HqCgagcLa105whXwEXJDEcTKqKy21LUq11DT9O2xhCO5MiIkr7i+O0BRRQB6jwt27PT5h9VT2yM+UuioQBbca/dyHj+MIRF0uBn2g1CEJQU/9k="
+      base64PreviewImage = d.b64Preview
       
-      swypTypeGroups = [pngFile, jpegFile]
+      swypTypeGroups = [pngFile] #png only now
       
       #alert "(switch userNmae with userID) DID UPDATE: TRIGGERING SWYP OUT TO: #{JSON.stringify(d)} with data: #{JSON.stringify(swypUI.dataToSend)}"
       swyp.makeSwypOut d.userID, base64PreviewImage, swypTypeGroups
@@ -143,11 +142,21 @@
       console.log eType
 
       if eType is "dragstart"
-        console.log "show bubbles"
+        console.log event
         positionPreview ex, ey
-        swypUI.dataToSend = event.data
+        #swypUI.dataToSend = event.data
         $("#preview").attr "src", event.data.img
         swypUI.showBubblesAt ex, ey
+        swypUI.contentURL = event.data.img
+
+    swypUI.getB64FromImgElement = (img) =>
+      canvas = document.createElement("canvas")
+      canvas.width = img.width
+      canvas.height = img.height
+      ctx = canvas.getContext("2d")
+      ctx.drawImage(img, 0, 0)
+      dataURL = canvas.toDataURL("image/png")
+      return dataURL.replace(/^data:image\/(png|jpg);base64,/, "")
 
     # setup the bubbles
     swypUI.setupBubbles = (json)->
