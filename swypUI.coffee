@@ -64,7 +64,7 @@
  
       console.log d
       pngFile = {
-        contentURL : "http://swyp.us/guide/setupPhotos/setup1.png"
+        contentURL : swypUI.contentURLs?.png
         contentMIME : imagePNGType
       }
 
@@ -147,7 +147,7 @@
         #swypUI.dataToSend = event.data
         $("#preview").attr "src", event.data.img
         swypUI.showBubblesAt ex, ey
-        swypUI.contentURL = event.data.img
+        swypUI.contentURLs = {png: event.data.img}
 
     swypUI.getB64FromImgElement = (img) =>
       canvas = document.createElement("canvas")

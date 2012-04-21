@@ -76,27 +76,27 @@
       console.log @data
       swypObjByID[@data.id] = @data #{dateCreated: @data.dateCreated, id: @data.id, swypSender: @data.swypSender, availableMimeTypes: @data.availableMIMETypes}
       console.log "swyp in available #{@data.id}"
-      $('#swypMessages').append "<br /> @ #{@data.dateCreated} swypIn avail w.ID #{@data.id} from #{@data.swypSender} with types: #{@data.availableMIMETypes} <img src='#{@data.swypSender.userImageURL}' /> <img src='#{@data.previewImageURL}' />"
-      $('#swypMessages').append "<input id= 'button_#{@data.id}', type= 'button', value='swyp in!'>"
-      $("#button_#{@data.id}").bind 'click', =>
-          makeSwypIn(@data.id)
+      #$('#swypMessages').append "<br /> @ #{@data.dateCreated} swypIn avail w.ID #{@data.id} from #{@data.swypSender} with types: #{@data.availableMIMETypes} <img src='#{@data.swypSender.userImageURL}' /> <img src='#{@data.previewImageURL}' />"
+      #$('#swypMessages').append "<input id= 'button_#{@data.id}', type= 'button', value='swyp in!'>"
+      #$("#button_#{@data.id}").bind 'click', =>
+      #    makeSwypIn(@data.id)
       swypClient.addPending {objectID: @data.id, userName: @data.swypSender.userName, userImageURL: @data.swypSender.userImageURL, thumbnailURL: @data.previewImageURL}
 
 
     @on swypOutPending: ->
-      $('#swypMessages').append "<br /> did swypOut @ #{@data.time} w.ID #{@data.id}"
+      console.log "<br /> did swypOut @ #{@data.time} w.ID #{@data.id}"
 
     @on welcome: ->
-      $('#swypMessages').append "Welcome to swyp,  #{@data.time}"
+      #$('#swypMessages').append "Welcome to swyp,  #{@data.time}"
     
     @on unauthorized: ->
       $('#swypMessages').append "<br />You're currently not logged in. <a href='/login'>Login here</a>."
     
     @on updateGood: ->
-      $('#swypMessages').append "<br />you updated successfully! Cool yo!"
+      console.log "<br />you updated successfully! Cool yo!"
     
     @on nearbyRefresh: ->
-      $('#swypMessages').append "<br />received a nearby session update! w. nearby: #{JSON.stringify(@data.nearby)}"
+      console.log "<br />received a nearby session update! w. nearby: #{JSON.stringify(@data.nearby)}"
       peers = @data.nearby
       graph = {nodes:[{userName:"",userImageURL:"", friend:true}], links:[]}
       i = 1
@@ -109,7 +109,7 @@
 
 
     @on updateRequest: ->
-      $('#swypMessages').append "<br />update requested!"
+      console.log "<br />update requested!"
       makeStatusUpdate()
 
     @on dataAvailable: ->
