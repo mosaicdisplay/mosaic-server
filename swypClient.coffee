@@ -48,10 +48,10 @@
     localSessionToken = =>
       return $("#token_input").val()
     
-    makeSwypOut = (swypRecipient, previewBase64Image, swypTypeGroups) =>
+    makeSwypOut = (swypRecipient, previewBase64Image, previewImageURL, swypTypeGroups) =>
         toRecipient = swypRecipient?.trim()
         console.log "swyp goes to recip #{toRecipient}"
-        @emit swypOut: {token: localSessionToken(), to: toRecipient, previewImageJPGBase64: previewBase64Image,typeGroups: swypTypeGroups}
+        @emit swypOut: {token: localSessionToken(), to: toRecipient, previewImagePNGBase64: previewBase64Image, previewImageURL: previewImageURL, typeGroups: swypTypeGroups}
     window.swyp.makeSwypOut = makeSwypOut
 
     #the client makes a swyp in, using the to: property if they wish to specifiy it to a specifc account._id

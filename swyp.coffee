@@ -60,7 +60,8 @@ SwypSchema = new Schema {
   swypRecipientID : String,
   dateCreated : Date,
   dateExpires : Date,
-  previewImageJPGBase64 : String
+  previewImagePNGBase64 : String
+  previewImageURL : String
   typeGroups : [TypeGroup]
 }
 
@@ -368,11 +369,11 @@ swypApp = require('zappa').app ->
     swypForID swypID, (err, swyp) =>
       if swyp?
         console.log "got swyp id #{swyp._id}"
-        if swyp.previewImageJPGBase64?
+        if swyp.previewImagePNGBase64?
           @response.contentType 'image/jpeg'
-          #console.log swyp.previewImageJPGBase64
+          #console.log swyp.previewImagePNGBase64
           #@response.setHeader 'Content-Transfer-Encoding', 'base64'
-          decodedImage = new Buffer swyp.previewImageJPGBase64, 'base64'
+          decodedImage = new Buffer swyp.previewImagePNGBase64, 'base64'
           @send decodedImage
           #@response.end swyp.previewImageJPG, 'binary'
         else
@@ -421,7 +422,8 @@ swypApp = require('zappa').app ->
         return
       #implement function to evaluate user token and abort if invalid
       supportedTypes = @data.typeGroups
-      previewImage = @data.previewImageJPGBase64
+      previewImage = @data.previewImagePNGBase64
+      previewImageURL = @data.previewImageURL
       recipientTo    = @data.to?.trim()
       fromSender     = {publicID: user._id, userImageURL: user.userImageURL, userName: user.userName}
       swypTime       = new Date()
@@ -442,12 +444,15 @@ swypApp = require('zappa').app ->
          typeGroupsToSave.push typeGroupObj #this gets saved
          typeGroupsToSend.push type.contentMIME #this gets emitted 
 
-      nextSwyp = new Swyp {previewImageJPGBase64: previewImage, swypSender: user.userID, dateCreated: swypTime, dateExpires: swypExpire, typeGroups: typeGroupsToSave}
+      nextSwyp = new Swyp {previewImagePNGBase64: previewImage, previewImageURL: previewImageURL, swypSender: user.userID, dateCreated: swypTime, dateExpires: swypExpire, typeGroups: typeGroupsToSave}
       nextSwyp.save (error) =>
         if error != null
           console.log "didFailSave", error
           return
-        previewImageURL = "#{primaryHost}/preview/#{nextSwyp._id}"
+        if previewImageURL? == false
+          previewImageURL = "#{primaryHost}/preview/#{nextSwyp._id}"
+          nextSwyp.previewImageURL = previewImageURL
+          nextSwyp.save()
         swypOutPacket = {id: nextSwyp._id, swypSender: fromSender, dateCreated: nextSwyp.dateCreated, dateExpires: nextSwyp.dateExpires, availableMIMETypes: typeGroupsToSend, previewImageURL: previewImageURL}
         @emit swypOutPending: swypOutPacket #this sends only the MIMES
         console.log "new swypOut saved"

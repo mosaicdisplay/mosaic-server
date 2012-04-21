@@ -53,7 +53,8 @@
 
         # this is how swyp outs are triggered!
         if collision and triggerSwypOut
-          d.b64Preview = swypUI.getB64FromImgElement $("#preview")[0]
+          d.previewImageURL = $("#preview")?[0]?.src
+          #d.b64Preview = swypUI.getB64FromImgElement $("#preview")[0]
           swypUI.swypOut d
       # update the instructions if dragging over a person
       $("#instructions").text swypUI.instructions[(if (collisionCount > 0) then "drop" else "default")]
@@ -74,11 +75,12 @@
       }
 
       base64PreviewImage = d.b64Preview
+      previewImageURL = d.previewImageURL
       
       swypTypeGroups = [pngFile] #png only now
       
       #alert "(switch userNmae with userID) DID UPDATE: TRIGGERING SWYP OUT TO: #{JSON.stringify(d)} with data: #{JSON.stringify(swypUI.dataToSend)}"
-      swyp.makeSwypOut d.userID, base64PreviewImage, swypTypeGroups
+      swyp.makeSwypOut d.userID, base64PreviewImage, previewImageURL, swypTypeGroups
 
     swypUI.hideSwyp = ->
       console.log 'hiding swyp'
