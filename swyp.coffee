@@ -79,7 +79,6 @@ swypApp = require('zappa').app ->
   #@use  mongooseAuth.middleware()
   #mongooseAuth.helpExpress @app
   
-  @enable 'default layout' # this is hella convenient
   crypto = require('crypto')
 
   @io.set("transports", ["xhr-polling"])
@@ -554,7 +553,18 @@ swypApp = require('zappa').app ->
       #io.sockets.sockets[sid].json.send -> #send to particularly waiting clients
 
   @coffee '/login.js': ->
+    updateOrientation = ->
+      orientation = 'portrait'
+      switch window.orientation
+        when 90 or -90 then orientation = 'landscape'
+      $('body').addClass orientation
+
     $(->
+      # handle iphone
+      updateOrientation()
+      window.onorientationchange = updateOrientation
+      window.top.scrollTo(0, 1) # hide status bar on iphone
+      
       $('#user_id').live 'blur', (e)->
         trimmed_mail = $(this).val().replace(/\s*/g,'').toLowerCase()
         val = CryptoJS.MD5(trimmed_mail)

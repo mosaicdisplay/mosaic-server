@@ -1,14 +1,16 @@
 lblue = #0099cc
 lgreen = #00cc00
 
-html, body
-  width: 100% 
-  height: 100%
 html
   background: rgba(0, 0, 0, 0.75)
   font-family: 'Helvetica Neue', 'Helvetica', sans-serif
-  -webkit-text-size-adjust: auto;
+  -webkit-text-size-adjust: none;
   overflow hidden
+  height auto
+html, body
+  margin 0
+  padding 0
+
 .hidden
   opacity 0
 .link
@@ -152,21 +154,24 @@ svg
 
 #login
   margin 51px 16px
-  width 320px
+  width 280px
   background #fff
   padding 16px
   font-size 16px
+  z-index 100
   & input, & button
     font-size inherit
     display block
     padding 8px
+    -webkit-appearance none
   & input
     margin 0 0 16px 0
     border 1px solid #ccc
-    width 302px
+    width 260px
+    border-radius none
   & button
     position relative
-    width 320px
+    width 280px
     border 0px
     background-color lgreen
     color #fff
@@ -180,6 +185,29 @@ svg
 #avatar
   width 36px
   height 36px
-  float right
-  margin-bottom -36px
+  position absolute
+  margin-left 242px
   background #ccc
+
+@media only screen and (max-device-width: 480px) {
+
+  body {
+    &.portrait {
+      width: 100%;
+    }
+    &.landscape{
+      width: 640px;
+    }
+  }
+
+  #avatar{
+    margin-top 3px
+  }
+
+  #instructions{
+    font-size 20px
+  }
+}
+
+#debug
+  display none

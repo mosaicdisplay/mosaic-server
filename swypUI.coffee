@@ -261,18 +261,21 @@
 
         offset_base = Math.floor(i/4)
         offset_sign = if offset_base % 2 is 0 then -1 else 1
-        offset = offset_sign*(60+Math.floor(Math.random()*180))
+        offset = offset_sign*(60+Math.floor(Math.random()*60))
         $elem.css("margin-#{offset_margin}", "+=#{offset}")
 
         # bind events
         events = eventsForDevice
         $elem.on(events[2], (e)->
+          e.stopPropagation()
           if confirm "Accept content from #{item.userName}?"
             #swyp dataAvailableCallback set on initialize
             console.log "accepting from item #{item}"
             swyp.makeSwypIn item.objectID
           $(this).fadeOut() # either way, hide the content afterwards
-        ).on('click', (e)-> e.preventDefault())
+          $(this).off(events[2])
+        ).on('click', (e)-> e.preventDefault()
+        ).on(events[0], (e)-> e.stopPropagation())
 
     swypUI.demoObj = (fakeID)->
       fakeID ?= Math.floor(Math.random()*101)
@@ -286,6 +289,7 @@
         window.open swypItem.contentURL, '_blank'
       @setupBubbles json
       @registerEvents()
-      #@addPending @demoObj()
+      #$('#debug').show()
+      @addPending @demoObj()
 
     window.swypClient = swypUI
