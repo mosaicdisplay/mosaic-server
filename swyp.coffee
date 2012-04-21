@@ -31,6 +31,7 @@ AccountSchema = new Schema {
   sessions : [SessionSchema]
 }
 
+'''
 AccountSchema.plugin mongooseAuth, {
   everymodule: {everyauth: User: -> Account}
   facebook:
@@ -40,7 +41,7 @@ AccountSchema.plugin mongooseAuth, {
       appSecret: secrets.fb.secret
       redirectPath: '/'
 }
-
+'''
 
 #each contentType the swyp-out supports generates one of these
 #typeGroups are fufilled as necessary to honor requests through swyp-ins
@@ -75,9 +76,8 @@ swypApp = require('zappa').app ->
   mongoose.connect(secrets.mongoDBConnectURLSecret)
   #removed , 'app.router' for mongooseAuth
   @use 'bodyParser', 'static', 'cookies', 'cookieParser', session: {secret: secrets.sessionSecret}
-  @use  mongooseAuth.middleware()
-
-  mongooseAuth.helpExpress @app
+  #@use  mongooseAuth.middleware()
+  #mongooseAuth.helpExpress @app
   
   @enable 'default layout' # this is hella convenient
   crypto = require('crypto')
@@ -556,9 +556,9 @@ swypApp = require('zappa').app ->
         val = CryptoJS.MD5(trimmed_mail)
         $('#avatar').attr('src',"http://gravatar.com/avatar/#{val}")
 
-      $('#account').on 'mousedown', (e)->
+      $('#account').on 'mousedown touchstart', (e)->
         e.stopPropagation()
-      $('#login_button').on 'click', (e)->
+      $('#login_button').on 'click touchend', (e)->
         e.preventDefault()
         e.stopPropagation()
         if not $(this).hasClass 'active'

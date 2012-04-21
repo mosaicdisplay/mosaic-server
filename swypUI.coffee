@@ -83,7 +83,6 @@
       swyp.makeSwypOut d.userID, base64PreviewImage, previewImageURL, swypTypeGroups
 
     swypUI.hideSwyp = ->
-      console.log 'hiding swyp'
       @node.attr "class", friendClass
       @vis.attr "class", "hidden"
       $("#preview").hide()
@@ -129,8 +128,8 @@
         if swypUI.isVisible
           xy = realTouches(this)
           # trigger swyp out on the collided people
-          checkForCollisions xy[0], xy[1], true
           swypUI.hideSwyp()
+          checkForCollisions xy[0], xy[1], true
       )
 
     # respond to message when in iframe
