@@ -551,7 +551,7 @@ swypApp = require('zappa').app ->
 
   @coffee '/login.js': ->
     $(->
-      $('#user_id').on 'blur', (e)->
+      $('#user_id').live 'blur', (e)->
         trimmed_mail = $(this).val().replace(/\s*/g,'').toLowerCase()
         val = CryptoJS.MD5(trimmed_mail)
         $('#avatar').attr('src',"http://gravatar.com/avatar/#{val}")
