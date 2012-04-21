@@ -333,6 +333,10 @@ swypApp = require('zappa').app ->
         else
           req.response.cookie 'sessiontoken', session.token, {httpOnly: true, secure: true, maxAge: 90000000000 }
         req.redirect '/'
+
+  @get '/logout', (req, res)->
+    req.response.cookie 'sessiontoken', null # clear the cookie
+    req.redirect '/'
   
   @get '/login': ->
     @render login: {ajax: @query.ajax?}

@@ -16,7 +16,10 @@ h1 "#instructions",
 img "#preview",
 
 div '#account', ->
-  a '#login_button', href:'#', -> 'Login/Register'
+  if not @token
+    a '#login_button', href:'#', -> 'Login/Register'
+  else
+    a '#logout_button', href: '/logout', -> 'Logout'
 
 div 'swypStatusControls', ->
   input id: 'token_input', type: 'text', name: 'token_input', placeholder: 'session token', size: 50, value: @token
