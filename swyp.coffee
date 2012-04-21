@@ -237,8 +237,12 @@ swypApp = require('zappa').app ->
   
   #returns whether a given session is active
   sessionIsActive = (session) =>
-    return ((session.expiration > new Date() || (session.expiration?) == false) && @io.sockets.socket(session.socketID)?)
-  
+    if (socketForSession(session)?)
+      return true
+    else
+      console.log "not active #{socketForSession(session)}"
+      return false
+
   @post '/signup', (req, res) ->
     userName   = req.body.user_name?.trim()
     userEmail = req.body.user_email?.trim().toLowerCase()
@@ -405,6 +409,7 @@ swypApp = require('zappa').app ->
       location  = @data.location
       oldLocation = session.location
       session.location = location
+      #session.expiration = new Date(new Date().valueOf()+100) #no reason to expire
       #console.log session.valueOf()
       user.save (error) => #[{"location":[44.680997,10.317557],"socketID":"1998803106463826141","token":"TOKENBLAH_alex"}]
         if error?
@@ -424,6 +429,8 @@ swypApp = require('zappa').app ->
       supportedTypes = @data.typeGroups
       previewImage = @data.previewImagePNGBase64
       previewImageURL = @data.previewImageURL
+      if (previewImageURL? == false || previewImageURL == "")
+        previewImageURL = null
       recipientTo    = @data.to?.trim()
       fromSender     = {publicID: user._id, userImageURL: user.userImageURL, userName: user.userName}
       swypTime       = new Date()
