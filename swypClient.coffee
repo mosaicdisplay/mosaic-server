@@ -90,7 +90,7 @@
       #$('#swypMessages').append "Welcome to swyp,  #{@data.time}"
     
     @on unauthorized: ->
-      $('#swypMessages').append "<br />You're currently not logged in. <a href='/login'>Login here</a>."
+      $('#swypMessages').append "<br />You're currently not logged in."
     
     @on updateGood: ->
       console.log "<br />you updated successfully! Cool yo!"
@@ -115,6 +115,6 @@
     @on dataAvailable: ->
       console.log "data available #{@data.contentURL}"
       swyp.dataAvailableCallback @data, null
-      $('#swypMessages').append "<img src='#{@data.contentURL}' alt='imgID#{@data.id} of type #{@data.contentMIME}'/>"
+      console.log "<img src='#{@data.contentURL}' alt='imgID#{@data.id} of type #{@data.contentMIME}'/>"
      
     @connect()
