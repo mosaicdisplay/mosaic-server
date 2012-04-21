@@ -52,8 +52,9 @@
         d3.select(this).attr "class", (if collision then "hovered" else friendClass(d))
 
         # this is how swyp outs are triggered!
-        if collision and triggerSwypOut then swypUI.swypOut d
-
+        if collision and triggerSwypOut
+          console.log ex
+          swypUI.swypOut d
       # update the instructions if dragging over a person
       $("#instructions").text swypUI.instructions[(if (collisionCount > 0) then "drop" else "default")]
 
@@ -76,7 +77,7 @@
       base64PreviewImage = "/9j/4AAQSkZJRgABAgAAZABkAAD/7AARRHVja3kAAQAEAAAADQAA/+4ADkFkb2JlAGTAAAAAAf/bAIQAExAQGBEYJhcXJjAlHiUwLCUkJCUsOzMzMzMzO0M+Pj4+Pj5DQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQwEUGBgfGx8lGBglNCUfJTRDNCkpNENDQ0AzQENDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0ND/8AAEQgAOAAoAwEiAAIRAQMRAf/EAHoAAAEFAQEAAAAAAAAAAAAAAAACAwQGBwEFAQADAQEAAAAAAAAAAAAAAAAAAgMBBBAAAgEDAgMGBAcAAAAAAAAAAQIAERIDITFBsQRRYZEiMgWh0UJycYFSYpITFBEAAwACAgMBAAAAAAAAAAAAAAERIQJREkFSA4H/2gAMAwEAAhEDEQA/AKvLd0/snQ5caM7UJ3Fe6VQrwmmp5EQWg+VfGkb6puRwNGlaqVzL7J0SoSpqwFQLp4PXe25eiKkgnG4uR+75iaLRSNRrIXV+348mF1YkqVOhPdJ6dtXl1DbRrChnNBwhOiE6iAoiaemMtjTX6V5TMiJqOJLsaV4BeUT6eBtRkmh18IrI1+JtNlblHTiFdYnKKYm+1uUj5KGWU0hFCE64QFRz/RlH1t/IyYPcWvLnGrXAVBPZUHhQVB4AbRWHrXAvtLWooZhpVrhq2+loC9/5zG36mxckI58wFf7G1/efnOjNmatHc0FT5jHOn6xsC2BQwrdQ7HVT8LfjHz1+RVqcejUoWbRrbfVp5j5d9PVtB31D9POYHfgTCTm6+putqWvu2HqCgagcLa105whXwEXJDEcTKqKy21LUq11DT9O2xhCO5MiIkr7i+O0BRRQB6jwt27PT5h9VT2yM+UuioQBbca/dyHj+MIRF0uBn2g1CEJQU/9k="
       
       swypTypeGroups = [pngFile, jpegFile]
-
+      
       #alert "(switch userNmae with userID) DID UPDATE: TRIGGERING SWYP OUT TO: #{JSON.stringify(d)} with data: #{JSON.stringify(swypUI.dataToSend)}"
       swyp.makeSwypOut d.userID, base64PreviewImage, swypTypeGroups
 

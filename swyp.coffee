@@ -329,11 +329,11 @@ swypApp = require('zappa').app ->
           req.response.cookie 'sessiontoken', session.token, {httpOnly: true, secure: true, maxAge: 90000000000 }
         req.redirect '/'
   
-  @get '/logins': ->
+  @get '/login': ->
     @render login: {ajax: @query.ajax?}
   
   @get '/token': ->
-    @redirect '/logins'
+    @redirect '/login'
 
   @post '/token', (req, res) ->
     reqUserID  = req.body.user_id
@@ -551,7 +551,7 @@ swypApp = require('zappa').app ->
         e.stopPropagation()
         if not $(this).hasClass 'active'
           if not $('#login').length
-            $.get '/logins?ajax=true', (data)->
+            $.get '/login?ajax=true', (data)->
               $content = jQuery data
               $('#account').append $content
               $('#user_id').focus()
