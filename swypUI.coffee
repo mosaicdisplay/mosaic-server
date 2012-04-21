@@ -242,8 +242,10 @@
         swypUI.pending.push item
         $elem = $('<a/>').addClass('swyp_thumb').attr('id', "obj_#{item.objectID}")
                                                 .attr('href', item.fullURL)
-        $img = $('<img/>').attr('src', item.thumbnailURL)
+        $img = $('<img/>').attr('class', 'thumb_image').attr('src', item.thumbnailURL)
+        $userImg = $('<img/>').attr('class', 'user_image').attr('src', item.userImageURL)
         $span = $('<span/>').addClass('username').text(item.userName)
+        $span.append $userImg
         $elem.append $img
         $elem.append $span
         $('body').append $elem
@@ -269,12 +271,12 @@
             #swyp dataAvailableCallback set on initialize
             console.log "accepting from item #{item}"
             swyp.makeSwypIn item.objectID
-          $(this).hide() # either way, hide the content afterwards
+          $(this).fadeOut() # either way, hide the content afterwards
         ).on('click', (e)-> e.preventDefault())
 
     swypUI.demoObj = (fakeID)->
       fakeID ?= Math.floor(Math.random()*101)
-      {objectID: fakeID, userName: 'Ethan Sherbondy', thumbnailURL: 'https://www.google.com/logos/2012/doisneau12-sr.png', fullURL: 'https://www.google.com/logos/2012/doisneau12-hp.jpg'}
+      {objectID: fakeID, userName: 'Ethan Sherbondy', thumbnailURL: 'https://www.google.com/logos/2012/doisneau12-sr.png', fullURL: 'https://www.google.com/logos/2012/doisneau12-hp.jpg', userImageURL: 'http://gravatar.com/avatar/7e1157e2c6cad16d4d4ff37d6bd20acf'}
 
     swypUI.initialize = (json)->
       window.addEventListener "message", @receiveMessage, false

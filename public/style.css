@@ -14,8 +14,9 @@ svg{-webkit-transition:opacity .2s linear}
 .swypStatusControls,.swypOutControls{position:absolute;z-index:3}
 .swypStatusControls{margin-top:32px}
 .swyp_thumb{display:block;position:fixed;z-index:4;margin:-25px;text-decoration:none;-webkit-transition:margin .5s linear;}
-.swyp_thumb span{background:rgba(0,0,0,0.50);color:#fff;border-radius:8px;padding:4px 8px;display:block;position:absolute;width:160px;text-align:center}
-.swyp_thumb img{width:100px;height:100px;box-shadow:0 0 8px rgba(0,0,0,0.50)}
+.swyp_thumb span{background:rgba(0,0,0,0.50);color:#fff;border-radius:8px;padding:4px 8px;line-height:1.5;display:block;position:absolute;width:160px;text-align:center}
+.swyp_thumb .thumb_image{width:100px;height:100px;box-shadow:0 0 8px rgba(0,0,0,0.50)}
+.swyp_thumb .user_image{width:24px;height:24px;float:left}
 .top{top:0;left:50%;}
 .top span{margin-top:16px;margin-left:-42px}
 .right{top:50%;right:0;}
