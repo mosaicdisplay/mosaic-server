@@ -154,7 +154,9 @@
       canvas.width = img.width
       canvas.height = img.height
       ctx = canvas.getContext("2d")
-      ctx.drawImage(img, 0, 0)
+      newImg = new Image()
+      newImg.src = img.src
+      ctx.drawImage(newImg, 0, 0)
       dataURL = canvas.toDataURL("image/png")
       return dataURL.replace(/^data:image\/(png|jpg);base64,/, "")
 
