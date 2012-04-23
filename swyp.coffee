@@ -567,7 +567,7 @@ swypApp = require('zappa').app ->
       # handle iphone
       updateOrientation()
       window.onorientationchange = updateOrientation
-      window.top.scrollTo(0, 1) # hide status bar on iphone
+      window.scrollTo(0, 1) # hide status bar on iphone
       
       $('#user_id').live 'blur', (e)->
         trimmed_mail = $(this).val().replace(/\s*/g,'').toLowerCase()
