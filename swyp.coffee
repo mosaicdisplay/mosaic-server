@@ -125,6 +125,7 @@ swypApp = require('zappa').app ->
             session = obj
       callback accountFound, session
 #      console.log "found user #{accountFound} for session #{session} andtoken #{token}"
+              #console.log sessionsForAccount
 
 # checkyourselfbeforeyouwreckyourself.... asynchronous recersion, yo.
   recursiveGetAccountsAtLocationArray = (index, locationsArray, uniqueAccounts, callback) => #recursive function #callback(error, uniqueAccounts)
@@ -157,6 +158,7 @@ swypApp = require('zappa').app ->
         sessionsForAccount = activeSessionsForAccount obj
         if sessionsForAccount[0]?
           activeSessions = activeSessions.concat(sessionsForAccount)
+      #console.log activeSessions
       for session in activeSessions
         relevantAccountsNearSession (session), (relevantUpdate, theSession) =>
           socket = socketForSession(theSession)
@@ -208,7 +210,9 @@ swypApp = require('zappa').app ->
              #console.log "current user w. session #{session.socketID} ignored bcuz only 1 session"
           else
             #console.log "acc #{acc.userID} does not own session with token #{session.token}"
-            relevantAccounts.push acc
+            sessionsForAccount = activeSessionsForAccount acc
+            if sessionsForAccount[0]?
+              relevantAccounts.push acc
         #don't need to send session details to every client, we don't save, so this is NBD
         shareAccounts = []
         for acc in relevantAccounts
@@ -222,7 +226,7 @@ swypApp = require('zappa').app ->
     if @io.sockets.sockets[session.socketID]?
       return @io.sockets.sockets[session.socketID]
     else
-      console.log "session no socket #{session.socketID}"
+      #console.log "session no socket #{session.socketID}"
       return null
   
   #grabs the active sessions for an accout, and returns in-line
@@ -239,7 +243,7 @@ swypApp = require('zappa').app ->
     if (socketForSession(session)?)
       return true
     else
-      console.log "not active #{socketForSession(session)}"
+      #console.log "not active #{socketForSession(session)}"
       return false
 
   @post '/signup', (req, res) ->
@@ -421,7 +425,7 @@ swypApp = require('zappa').app ->
         else
           @emit updateGood: {}
           updateUniqueActiveSessionsNearLocationArray [location, oldLocation], (err) =>
-            console.log err
+            console.log "nearby update error #{err}"
 
   @on swypOut: ->
     tokenValidate @data.token, (user, session) =>

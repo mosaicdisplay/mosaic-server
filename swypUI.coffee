@@ -285,11 +285,11 @@
       window.addEventListener "message", @receiveMessage, false
       $("#instructions").text @instructions["default"]
       swyp.dataAvailableCallback = (swypItem, err) =>
-        console.log "callbacking for swyp item#{swypItem}"
-        window.open swypItem.contentURL, '_blank'
+        console.log "data available callback for swyp item#{swypItem}"
+        window.location swypItem.contentURL, '_blank'
       @setupBubbles json
       @registerEvents()
       #$('#debug').show()
-      @addPending @demoObj()
+      #@addPending @demoObj()
 
     window.swypClient = swypUI
