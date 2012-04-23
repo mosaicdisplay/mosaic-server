@@ -44,21 +44,25 @@
     friendClass = (d) -> if d.friend then "friend" else "stranger"
 
     # see if mouse/finger drag collides with a person bubble
-    checkForCollisions = (ex, ey, triggerSwypOut) ->
+    checkForCollisions = (ex, ey) ->
       collisionCount = 0
       swypUI.node.each (d, i) ->
         collision = collides(this, ex, ey)
         collisionCount += 1 if collision
+        d.collision = collision
         d3.select(this).attr "class", (if collision then "hovered" else friendClass(d))
 
-        # this is how swyp outs are triggered!
-        if collision and triggerSwypOut
+      # update the instructions if dragging over a person
+      $("#instructions").text swypUI.instructions[(if (collisionCount > 0) then "drop" else "default")]
+
+    swypOutSelected = ->
+      # this is how swyp outs are triggered!
+      swypUI.node.each (d, i)->
+        if d.collision
           d.previewImageURL = $("#preview")?[0]?.src
           #d.b64Preview = swypUI.getB64FromImgElement $("#preview")[0]
           console.log 'swyping out'
           swypUI.swypOut d
-      # update the instructions if dragging over a person
-      $("#instructions").text swypUI.instructions[(if (collisionCount > 0) then "drop" else "default")]
 
     swypUI.swypOut = (d)->
       imageJPEGType = "image/jpeg"
@@ -124,13 +128,11 @@
           xy = realTouches(this)
           $("#preview").show()
           positionPreview xy[0], xy[1]
-          checkForCollisions xy[0], xy[1], false
-      ).on(events[2], ->
+          checkForCollisions xy[0], xy[1]
+      ).on(events[2], (e) ->
         if swypUI.isVisible
-          xy = realTouches(this)
-          # trigger swyp out on the collided people
+          swypOutSelected()
           swypUI.hideSwyp()
-          checkForCollisions xy[0], xy[1], true
       )
 
     # respond to message when in iframe
