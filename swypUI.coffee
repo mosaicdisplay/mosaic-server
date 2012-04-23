@@ -55,6 +55,7 @@
         if collision and triggerSwypOut
           d.previewImageURL = $("#preview")?[0]?.src
           #d.b64Preview = swypUI.getB64FromImgElement $("#preview")[0]
+          console.log 'swyping out'
           swypUI.swypOut d
       # update the instructions if dragging over a person
       $("#instructions").text swypUI.instructions[(if (collisionCount > 0) then "drop" else "default")]
