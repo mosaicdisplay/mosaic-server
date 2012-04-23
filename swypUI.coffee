@@ -286,7 +286,7 @@
       $("#instructions").text @instructions["default"]
       swyp.dataAvailableCallback = (swypItem, err) =>
         console.log "data available callback for swyp item#{swypItem}"
-        window.location swypItem.contentURL, '_blank'
+        window.location = swypItem.contentURL
       @setupBubbles json
       @registerEvents()
       #$('#debug').show()
