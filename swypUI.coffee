@@ -196,7 +196,7 @@
       # the user avatar
       @node.append("svg:image")
           .attr("class", "circle")
-          .attr("xlink:href", (d) -> d.userImageURL)
+          .attr("xlink:href", (d) -> if d.userImageURL then d.userImageURL else '/map.png')
           .attr("x", "-16px")
           .attr("y", "-20px")
           .attr("width", "40px")
