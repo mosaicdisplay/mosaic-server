@@ -338,7 +338,7 @@ swypApp = require('zappa').app ->
         req.redirect '/'
 
   @get '/logout', (req, res)->
-    req.response.cookie 'sessiontoken', null # clear the cookie
+    req.response.clearCookie 'sessiontoken' # clear the cookie
     req.redirect '/'
   
   @get '/login': ->
