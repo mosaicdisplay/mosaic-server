@@ -263,6 +263,9 @@
         offset_sign = if offset_base % 2 is 0 then -1 else 1
         offset = offset_sign*(60+Math.floor(Math.random()*60))
         $elem.css("margin-#{offset_margin}", "+=#{offset}")
+       
+        window.setInterval (=>
+          $elem.fadeOut()), 10 * 1000
 
         # bind events
         events = eventsForDevice
