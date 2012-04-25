@@ -269,7 +269,7 @@ swypApp = require('zappa').app ->
           @redirect '/token'
     else
       @render signup: {user_name: userName}
-
+  
 
   @get '/signup': ->
     @render signup: {}
@@ -303,9 +303,17 @@ swypApp = require('zappa').app ->
        
       if matchingUser != null
         console.log "match user"
-      
-        if matchingUser.sessions.length == 0
-          newToken = "TOKENBLAH_#{matchingUser.userID}"
+        
+        availableSessions = []
+        for ses in matchingUser.sessions
+          if (sessionIsActive ses) == false
+            availableSessions.push(ses)
+
+        if availableSessions.length == 0
+          current_date = (new Date()).valueOf().toString()
+          random = Math.random().toString()
+          hash = crypto.createHash('sha1').update(current_date + random).digest('hex')
+          newToken = "TOKENBLAH_#{matchingUser.userID}_#{hash}"
           console.log "Newtoken created #{newToken}"
           session =  new Session {token: newToken}
           matchingUser.sessions.push session
@@ -316,9 +324,19 @@ swypApp = require('zappa').app ->
             callback null, matchingUser, session
         else
           console.log "login session success for", matchingUser.userID
-          previousSession = matchingUser.sessions[0]
+          previousSession = availableSessions[0]
           callback null, matchingUser, previousSession
 
+  @get '/demo', (req, res) ->
+     getTokenFromUserName 'guest','guest', (err, account, session) =>
+      if err?
+        req.render login: {error: err}
+      else
+        if @request.headers['host'] == '127.0.0.1:3000'
+          req.response.cookie 'sessiontoken', session.token, {httpOnly: true, maxAge: 90000000000 }
+        else
+          req.response.cookie 'sessiontoken', session.token, {httpOnly: true, secure: true, maxAge: 90000000000 }
+        req.redirect '/'
   
   @post '/login', (req, res) ->
     reqUserID  = req.body.user_id
