@@ -143,10 +143,8 @@
       console.log "RECEIVED: " + JSON.stringify(event.data)
       swypUI.sourceWindow = event.source
       eType = event.data.e
-      if eType == "ready"
-        console.log "embedding page swypOut ready"
+      if eType is "dragstart"
         swypUI.canSwypOut = true
-      else if eType is "dragstart"
         touches = event.data.touches
         ex = touches[0] - 100
         ey = touches[1] - 100
