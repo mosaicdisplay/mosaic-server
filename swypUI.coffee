@@ -144,6 +144,7 @@
       swypUI.sourceWindow = event.source
       eType = event.data.e
       if eType == "ready"
+        console.log "embedding page swypOut ready"
         swypUI.canSwypOut = true
       else if eType is "dragstart"
         touches = event.data.touches
