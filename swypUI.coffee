@@ -31,12 +31,13 @@
 
     # (re)display the bubbles, centered at the provided coordinates
     swypUI.showBubblesAt = (ex, ey) ->
-      $('#instructions').show()
-      @vis.attr "class", "visible"
-      @isVisible = true
-      swypUI.x = ex
-      swypUI.y = ey
-      @force.start()
+      if swypUI.canSwypOut == true
+        $('#instructions').show()
+        @vis.attr "class", "visible"
+        @isVisible = true
+        swypUI.x = ex
+        swypUI.y = ey
+        @force.start()
 
     # collision detection between an element and a touch/mouse x, y coord
     collides = (el, ex, ey) ->
@@ -299,16 +300,15 @@
     swypUI.initialize = (json)->
       window.addEventListener "message", @receiveMessage, false
       swyp.dataAvailableCallback = (swypItem, err) =>
-        console.log "data available callback for swyp item#{swypItem}"
-        window.location = swypItem.contentURL
-     
-      if @canSwypOut == true
-        $("#instructions").text (if (window.swyp.isSignedIn == false) then @instructions["signIn"] else  @instructions["default"])
-        @vis = d3.select("body").append("svg:svg").attr("class", "hidden")
-        @setupBubbles json
-        @registerEvents()
-      else
         $("#instructions").text (if (window.swyp.isSignedIn == false) then @instructions["signIn"] else @instructions["receive"])
         $('#instructions').show()
-
+        #$("#instructions").text (if (window.swyp.isSignedIn == false) then @instructions["signIn"] else  @instructions["default"])
+        console.log "data available callback for swyp item#{swypItem}"
+        window.location = swypItem.contentURL
+ 
+      @vis = d3.select("body").append("svg:svg").attr("class", "hidden")
+      @setupBubbles json
+      @registerEvents()
+    
+   
     window.swypClient = swypUI
