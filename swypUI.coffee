@@ -22,6 +22,7 @@
       dataToSend: undefined #the data to be sent on swyp out
       pending: [] #any pending content for receipt
       canSwypIn: true #turn off to disable swyp ins
+      canSwypOut: false #if embedded, then swyp out, otherwise is recieve window
 
     isTouchDevice = "ontouchstart" of document.documentElement
 
@@ -142,12 +143,13 @@
       console.log "RECEIVED: " + JSON.stringify(event.data)
       swypUI.sourceWindow = event.source
       eType = event.data.e
-      touches = event.data.touches
-      ex = touches[0] - 100
-      ey = touches[1] - 100
-      console.log eType
+      if eType == "ready"
+        swypUI.canSwypOut = true
+      else if eType is "dragstart"
+        touches = event.data.touches
+        ex = touches[0] - 100
+        ey = touches[1] - 100
 
-      if eType is "dragstart"
         console.log event
         positionPreview ex, ey
         #swypUI.dataToSend = event.data
@@ -296,8 +298,6 @@
       {objectID: fakeID, userName: 'Ethan Sherbondy', thumbnailURL: 'https://www.google.com/logos/2012/doisneau12-sr.png', fullURL: 'https://www.google.com/logos/2012/doisneau12-hp.jpg', userImageURL: 'http://gravatar.com/avatar/7e1157e2c6cad16d4d4ff37d6bd20acf'}
 
     swypUI.initialize = (json)->
-      swypUI.canSwypOut = @sourceWindow? #if embedded, then swyp out, otherwise is recieve window
-      
       window.addEventListener "message", @receiveMessage, false
       swyp.dataAvailableCallback = (swypItem, err) =>
         console.log "data available callback for swyp item#{swypItem}"
