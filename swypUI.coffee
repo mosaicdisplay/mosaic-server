@@ -14,7 +14,7 @@
       vis: undefined
       force: d3.layout.force()
       instructions:
-        default: "Drag the content onto the person you want to send it to."
+        default: "Drop the content on whom you'd like to send it to."
         drop:    "Drop to send."
         sending: "Sending now..."
       dataToSend: undefined #the data to be sent on swyp out
@@ -31,8 +31,8 @@
       $('#instructions').show()
       @vis.attr "class", "visible"
       @isVisible = true
-      @x = ex
-      @y = ey
+      swypUI.x = ex
+      swypUI.y = ey
       @force.start()
 
     # collision detection between an element and a touch/mouse x, y coord
@@ -167,9 +167,7 @@
     # setup the bubbles
     swypUI.setupBubbles = (json)->
       if not @body then @body = d3.select("body")
-      
-      if @vis then $('svg').remove() # hack! BAD
-      @vis = @body.append("svg:svg").attr("class", "hidden")
+      @vis = d3.select("svg")
 
       @force.nodes(json.nodes).links(json.links).gravity(0)
            .distance(100).charge(-1000).start()
@@ -185,33 +183,42 @@
 
       @link.exit().remove()
 
-      @node = @vis.selectAll("g.node").data(json.nodes)
-      @node.enter()
-           .append("svg:g").attr("class", (d) -> friendClass)
+      @node = @vis.selectAll("g").data json.nodes, (d) ->
+                return d.publicID
+          
+      #.filter((d, i) -> i isnt 0) 
+      userCell = @node.enter()
+        .append("svg:g")
 
-      @node.filter((d, i) -> i isnt 0)
-        .append("svg:rect")
-          .attr("class", "rect")
-          .attr("x", "-16px")
-          .attr("y", "-20px")
-          .attr("width", "200px")
-          .attr("height", "40px")
-      # the user avatar
-      @node.append("svg:image")
-          .attr("class", "circle")
-          .attr("xlink:href", (d) -> if d.userImageURL then d.userImageURL else '/map.png')
-          .attr("x", "-16px")
-          .attr("y", "-20px")
-          .attr("width", "40px")
-          .attr("height", "40px")
-      # the user name
-      @node.append("svg:text")
-          .attr("class", "nodetext")
-          .attr("dx", 32)
-          .attr("dy", ".35em").text (d) -> d.userName
+      userCell
+        .attr("class", (d) -> friendClass)
+        .attr("width", "200px")
+        .attr("height", "40px")
+        .attr("transform", "translate(#{@x},#{@y})")
+      
+      userCell.append("svg:rect")
+        .attr("class", "rect")
+        .attr("x", "-16px")
+        .attr("y", "-20px")
+        .attr("width", "200px")
+        .attr("height", "40px")
+
+      userCell.append("svg:image")
+        .attr("class", "circle")
+        .attr("xlink:href", (d) -> if d.userImageURL then d.userImageURL else '/map.png')
+        .attr("x", "-16px")
+        .attr("y", "-20px")
+        .attr("width", "40px")
+        .attr("height", "40px")
+
+      userCell.append("svg:text")
+        .attr("class", "nodetext")
+        .attr("dx", 32)
+        .attr("dy", ".35em").text (d) -> d.userName
 
       @node.exit().remove()
 
+      
       @force.on "tick", (e) =>
         @resize()
         @link.attr("x1", (d) -> d.source.x)
@@ -222,11 +229,10 @@
         @node.attr "transform", (d) =>
           # only translate the center node (index 0), the rest auto-follow
           if d.index is 0
-            damper = 0.1
+            damper = 0.15
             d.x = if @x then d.x + (@x - d.x) * (damper + 0.71) * e.alpha else 400
             d.y = if @y then d.y + (@y - d.y) * (damper + 0.71) * e.alpha else 400
           "translate(#{d.x},#{d.y})"
-
 
     # Ethan, cool thanks, this is how you add a new incoming swyp!
     # expects an object: {objectID: 1, 
@@ -293,6 +299,8 @@
       swyp.dataAvailableCallback = (swypItem, err) =>
         console.log "data available callback for swyp item#{swypItem}"
         window.location = swypItem.contentURL
+      
+      @vis = d3.select("body").append("svg:svg").attr("class", "hidden")
       @setupBubbles json
       @registerEvents()
       #$('#debug').show()

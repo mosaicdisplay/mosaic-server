@@ -98,10 +98,10 @@
     @on nearbyRefresh: ->
       console.log "<br />received a nearby session update! w. nearby: #{JSON.stringify(@data.nearby)}"
       peers = @data.nearby
-      graph = {nodes:[{userName:"",userImageURL:"", friend:true}], links:[]}
+      graph = {nodes:[{userName:"Your Room",publicID:"",userImageURL:"", friend:true}], links:[]}
       i = 1
       for peer in peers
-        graph.nodes.push({userName:peer.userName, userID:peer.publicID, userImageURL:peer.userImageURL, friend:false})
+        graph.nodes.push({userName:peer.userName,publicID:peer.publicID, userImageURL:peer.userImageURL, friend:false})
         graph.links.push({source:i, target:0})
         i += 1
 
