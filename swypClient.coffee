@@ -25,9 +25,7 @@
 
     $ =>
       window.swyp.isSignedIn = (localSessionToken())?
-      console.log window.swyp.isSignedIn
       
-      #d3.json "graph.json", (json) ->
       swypClient.initialize {nodes:[], links:[]}
     
     localSessionToken = =>

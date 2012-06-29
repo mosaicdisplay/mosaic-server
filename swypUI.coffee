@@ -22,7 +22,7 @@
       dataToSend: undefined #the data to be sent on swyp out
       pending: [] #any pending content for receipt
       canSwypIn: true #turn off to disable swyp ins
-      canSwypOut: false #if embedded, then swyp out, otherwise is recieve window
+      canSwypOut: true #if embedded, then swyp out, otherwise is recieve window
 
     isTouchDevice = "ontouchstart" of document.documentElement
 
@@ -298,11 +298,13 @@
       {objectID: fakeID, userName: 'Ethan Sherbondy', thumbnailURL: 'https://www.google.com/logos/2012/doisneau12-sr.png', fullURL: 'https://www.google.com/logos/2012/doisneau12-hp.jpg', userImageURL: 'http://gravatar.com/avatar/7e1157e2c6cad16d4d4ff37d6bd20acf'}
 
     swypUI.initialize = (json)->
-      window.addEventListener "message", @receiveMessage, false
-      swyp.dataAvailableCallback = (swypItem, err) =>
+      if swypUI.canSwypOut == false || window.swyp.isSignedIn == false
         $("#instructions").text (if (window.swyp.isSignedIn == false) then @instructions["signIn"] else @instructions["receive"])
         $('#instructions').show()
-        #$("#instructions").text (if (window.swyp.isSignedIn == false) then @instructions["signIn"] else  @instructions["default"])
+      else
+        $("#instructions").text (@instructions["default"])
+      window.addEventListener "message", @receiveMessage, false
+      swyp.dataAvailableCallback = (swypItem, err) =>
         console.log "data available callback for swyp item#{swypItem}"
         window.location = swypItem.contentURL
  
