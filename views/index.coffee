@@ -21,6 +21,7 @@ div '#account', ->
   else
     a '#logout_button', href: '/logout', -> 'Logout'
 
+
 div '#debug', ->
   div 'swypStatusControls', ->
     input id: 'token_input', type: 'text', name: 'token_input', placeholder: 'session token', size: 50, value: @token

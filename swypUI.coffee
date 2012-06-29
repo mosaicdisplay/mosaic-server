@@ -17,9 +17,12 @@
         default: "Drop the content on whom you'd like to send it to."
         drop:    "Drop to send."
         sending: "Sending now..."
+        signIn: "go to d.swyp.us for a demo account, then refresh"
+        receive: "receive swyps here"
       dataToSend: undefined #the data to be sent on swyp out
       pending: [] #any pending content for receipt
       canSwypIn: true #turn off to disable swyp ins
+      canSwypOut: @sourceWindow? #if embedded, then swyp out, otherwise is recieve window
 
     isTouchDevice = "ontouchstart" of document.documentElement
 
@@ -53,7 +56,7 @@
         d3.select(this).attr "class", (if collision then "hovered" else friendClass(d))
 
       # update the instructions if dragging over a person
-      $("#instructions").text swypUI.instructions[(if (collisionCount > 0) then "drop" else "default")]
+      $("#instructions").text @instructions[(if (window.swyp.isSignedIn == false) then "signIn" else if (collisionCount > 0) then "drop" else "default")]
 
     swypOutSelected = ->
       # this is how swyp outs are triggered!
@@ -205,7 +208,7 @@
 
       userCell.append("svg:image")
         .attr("class", "circle")
-        .attr("xlink:href", (d) -> if d.userImageURL then d.userImageURL else '/map.png')
+        .attr("xlink:href", (d, i) -> if d.userImageURL then d.userImageURL else if i == 0 then '/map.png' else null)
         .attr("x", "-16px")
         .attr("y", "-20px")
         .attr("width", "40px")
@@ -295,15 +298,17 @@
 
     swypUI.initialize = (json)->
       window.addEventListener "message", @receiveMessage, false
-      $("#instructions").text @instructions["default"]
       swyp.dataAvailableCallback = (swypItem, err) =>
         console.log "data available callback for swyp item#{swypItem}"
         window.location = swypItem.contentURL
-      
-      @vis = d3.select("body").append("svg:svg").attr("class", "hidden")
-      @setupBubbles json
-      @registerEvents()
-      #$('#debug').show()
-      #@addPending @demoObj()
+     
+      if @canSwypOut == true
+        $("#instructions").text (if (window.swyp.isSignedIn == false) then @instructions["signIn"] else  @instructions["default"])
+        @vis = d3.select("body").append("svg:svg").attr("class", "hidden")
+        @setupBubbles json
+        @registerEvents()
+      else
+        $("#instructions").text (if (window.swyp.isSignedIn == false) then @instructions["signIn"] else @instructions["receive"])
+        $('#instructions').show()
 
     window.swypClient = swypUI

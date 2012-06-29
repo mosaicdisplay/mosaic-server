@@ -215,6 +215,8 @@ swypApp = require('zappa').app ->
               relevantAccounts.push acc
         #don't need to send session details to every client, we don't save, so this is NBD
         shareAccounts = []
+        #for some reason there is a real need to uniquify
+        relevantAccounts = relevantAccounts.unique()
         for acc in relevantAccounts
           shareAccounts.push {publicID: acc._id, userName: acc.userName, userImageURL: acc.userImageURL}
        

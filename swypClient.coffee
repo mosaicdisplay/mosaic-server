@@ -13,6 +13,7 @@
     
     window.swyp.dataAvailableCallback = null #this gets called after swypIn function(swypInfo, error)
 
+
     setLocation = (pos)->
       console.log "updated location"
       userLocation = [pos.coords.longitude, pos.coords.latitude]
@@ -23,30 +24,18 @@
       navigator.geolocation.watchPosition(setLocation, null)
 
     $ =>
-      $('#swypOut_button').click (e) =>
-       pngFile = {
-          contentURL : "http://swyp.us/guide/setupPhotos/setup1.png"
-          contentMIME : imagePNGType
-        }
-
-       jpegFile = {
-          contentURL : "http://fluid.media.mit.edu/people/natan/media/swyp/swyp.jpg"
-          contentMIME : imageJPEGType
-        }
-        
-        base64PreviewImage = "/9j/4AAQSkZJRgABAgAAZABkAAD/7AARRHVja3kAAQAEAAAADQAA/+4ADkFkb2JlAGTAAAAAAf/bAIQAExAQGBEYJhcXJjAlHiUwLCUkJCUsOzMzMzMzO0M+Pj4+Pj5DQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQwEUGBgfGx8lGBglNCUfJTRDNCkpNENDQ0AzQENDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0ND/8AAEQgAOAAoAwEiAAIRAQMRAf/EAHoAAAEFAQEAAAAAAAAAAAAAAAACAwQGBwEFAQADAQEAAAAAAAAAAAAAAAAAAgMBBBAAAgEDAgMGBAcAAAAAAAAAAQIAERIDITFBsQRRYZEiMgWh0UJycYFSYpITFBEAAwACAgMBAAAAAAAAAAAAAAERIQJREkFSA4H/2gAMAwEAAhEDEQA/AKvLd0/snQ5caM7UJ3Fe6VQrwmmp5EQWg+VfGkb6puRwNGlaqVzL7J0SoSpqwFQLp4PXe25eiKkgnG4uR+75iaLRSNRrIXV+348mF1YkqVOhPdJ6dtXl1DbRrChnNBwhOiE6iAoiaemMtjTX6V5TMiJqOJLsaV4BeUT6eBtRkmh18IrI1+JtNlblHTiFdYnKKYm+1uUj5KGWU0hFCE64QFRz/RlH1t/IyYPcWvLnGrXAVBPZUHhQVB4AbRWHrXAvtLWooZhpVrhq2+loC9/5zG36mxckI58wFf7G1/efnOjNmatHc0FT5jHOn6xsC2BQwrdQ7HVT8LfjHz1+RVqcejUoWbRrbfVp5j5d9PVtB31D9POYHfgTCTm6+putqWvu2HqCgagcLa105whXwEXJDEcTKqKy21LUq11DT9O2xhCO5MiIkr7i+O0BRRQB6jwt27PT5h9VT2yM+UuioQBbca/dyHj+MIRF0uBn2g1CEJQU/9k="
-        
-        makeSwypOut $("#recipient_input").val(), base64PreviewImage, [pngFile, jpegFile]
-
-      $("#statusupdate_button").click ->
-        makeStatusUpdate()
+      window.swyp.isSignedIn = (localSessionToken())?
+      console.log window.swyp.isSignedIn
       
-      d3.json "graph.json", (json) ->
-        swypClient.initialize json
-        
+      #d3.json "graph.json", (json) ->
+      swypClient.initialize {nodes:[], links:[]}
     
     localSessionToken = =>
-      return $("#token_input").val()
+      #this is really such a hack, I think... 
+      token = $("#token_input").val()
+      if token == "" || token? == false
+        return null
+      else return token
     
     makeSwypOut = (swypRecipient, previewBase64Image, previewImageURL, swypTypeGroups) =>
         toRecipient = swypRecipient?.trim()
@@ -96,7 +85,16 @@
       console.log "<br />you updated successfully! Cool yo!"
     
     @on nearbyRefresh: ->
-      console.log "<br />received a nearby session update! w. nearby: #{JSON.stringify(@data.nearby)}"
+      newNearbyDataString = JSON.stringify(@data.nearby)
+      console.log "<br />received a nearby session update! w. nearby: #{newNearbyDataString}"
+
+      if swypClient.lastNearbyData == newNearbyDataString
+        console.log "equal update"
+        return
+      else
+        console.log "not equal-- last one", swypClient.lastNearbyData
+        swypClient.lastNearbyData = newNearbyDataString
+
       peers = @data.nearby
       graph = {nodes:[{userName:"Your Room",publicID:"",userImageURL:"", friend:true}], links:[]}
       i = 1
