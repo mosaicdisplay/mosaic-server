@@ -329,6 +329,42 @@ swypApp = require('zappa').app ->
           previousSession = availableSessions[0]
           callback null, matchingUser, previousSession
 
+  @get '/out', (req, res) -> #if no account, give a demo account
+    token = @request.cookies.sessiontoken
+    tokenValidate token, (user, session) =>
+      if session? == false
+        console.log "giving guest account for out"
+        getTokenFromUserName 'guest','guest', (err, account, session) =>
+         if err?
+           req.render login: {error: err}
+         else
+           if @request.headers['host'] == '127.0.0.1:3000'
+             req.response.cookie 'sessiontoken', session.token, {httpOnly: true, maxAge: 90000000000 }
+           else
+             req.response.cookie 'sessiontoken', session.token, {httpOnly: true, secure: true, maxAge: 90000000000 }
+           req.redirect 'http://swyp.us/out'
+      else
+        console.log "user #{user.userName} has account for out"
+        req.redirect 'http://swyp.us/out'
+ 
+  @get '/in', (req, res) -> #if no account, give a demo account
+    token = @request.cookies.sessiontoken
+    tokenValidate token, (user, session) =>
+      if session? == false
+        console.log "giving guest account for in"
+        getTokenFromUserName 'guest','guest', (err, account, session) =>
+         if err?
+           req.render login: {error: err}
+         else
+           if @request.headers['host'] == '127.0.0.1:3000'
+             req.response.cookie 'sessiontoken', session.token, {httpOnly: true, maxAge: 90000000000 }
+           else
+             req.response.cookie 'sessiontoken', session.token, {httpOnly: true, secure: true, maxAge: 90000000000 }
+           req.redirect '/'
+      else
+        console.log "user #{user.userName} has account for in"
+        req.redirect '/'
+ 
   @get '/demo', (req, res) ->
      getTokenFromUserName 'guest','guest', (err, account, session) =>
       if err?
