@@ -9,8 +9,9 @@
     swypObjByID = []
     userLocation = [44.680997,10.317557] # a lng/lat pair
 
-    window.swyp.supportedContentTypes = [imageJPEGType, imagePNGType] #in order of preference more->less
-    
+    #window.swyp.supportedContentTypes = [imageJPEGType, imagePNGType] #in order of preference more->less
+    window.swyp.supportedContentTypes = ["*"]
+
     window.swyp.dataAvailableCallback = null #this gets called after swypIn function(swypInfo, error)
 
 
@@ -46,7 +47,10 @@
       if swypObjByID[swypObjID]?
         console.log "swyp in started for #{swypObjID}"
         swypObj = swypObjByID[swypObjID]
-        commonTypes = swyp.supportedContentTypes.intersect(swypObj.availableMIMETypes)
+        if swyp.supportedContentTypes?[0] == "*"
+          commonTypes = swypObj.availableMIMETypes
+        else
+          commonTypes = swyp.supportedContentTypes.intersect(swypObj.availableMIMETypes)
         if commonTypes[0]?
           @emit swypIn: {token: localSessionToken(), id: swypObj.id, contentMIME:commonTypes[0]}
         else

@@ -19,6 +19,7 @@
         sending: "Sending now..."
         signIn: "go to d.swyp.us for a demo account, then refresh"
         receive: "receive swyps here"
+        refresh: "you must refresh to get another!"
       dataToSend: undefined #the data to be sent on swyp out
       pending: [] #any pending content for receipt
       canSwypIn: true #turn off to disable swyp ins
@@ -65,14 +66,13 @@
         if d.collision
           d.previewImageURL = $("#preview")?[0]?.src
           #d.b64Preview = swypUI.getB64FromImgElement $("#preview")[0]
-          console.log 'swyping out'
           swypUI.swypOut d
 
     swypUI.swypOut = (d)->
       imageJPEGType = "image/jpeg"
       imagePNGType = "image/png"
- 
-      console.log d
+      
+      ###
       pngFile = {
         contentURL : swypUI.contentURLs?.png
         contentMIME : imagePNGType
@@ -82,13 +82,16 @@
         contentURL : "http://fluid.media.mit.edu/people/natan/media/swyp/swyp.jpg"
         contentMIME : imageJPEGType
       }
+      ###
 
       base64PreviewImage = d.b64Preview
       previewImageURL = d.previewImageURL
-      
-      swypTypeGroups = [pngFile] #png only now
-      
-      #alert "(switch userNmae with userID) DID UPDATE: TRIGGERING SWYP OUT TO: #{JSON.stringify(d)} with data: #{JSON.stringify(swypUI.dataToSend)}"
+           
+      #todo: this part is a bit messy, we could add the pngs, etc
+      swypTypeGroups = []
+      swypTypeGroups = swypTypeGroups.concat(swypUI.pendingTypeGroups)
+      #swypTypeGroups.concat(pngFile)
+      console.log "typeGroups: ", swypTypeGroups
       swyp.makeSwypOut d.userID, base64PreviewImage, previewImageURL, swypTypeGroups
 
     swypUI.hideSwyp = ->
@@ -150,10 +153,11 @@
         ex = touches[0] - 100
         ey = touches[1] - 100
 
-        console.log event
         positionPreview ex, ey
         #swypUI.dataToSend = event.data
         $("#preview").attr "src", event.data.img
+        swypUI.pendingTypeGroups = event.data.typeGroups
+        console.log "Pending types", swypUI.pendingTypeGroups
         swypUI.showBubblesAt ex, ey
         swypUI.contentURLs = {png: event.data.img}
 
@@ -307,7 +311,9 @@
       swyp.dataAvailableCallback = (swypItem, err) =>
         console.log "data available callback for swyp item#{swypItem}"
         window.location = swypItem.contentURL
- 
+        $("#instructions").text (@instructions["refresh"])
+        $('#instructions').show()
+
       @vis = d3.select("body").append("svg:svg").attr("class", "hidden")
       @setupBubbles json
       @registerEvents()
