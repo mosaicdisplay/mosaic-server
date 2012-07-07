@@ -14,11 +14,11 @@
       vis: undefined
       force: d3.layout.force()
       instructions:
+        receive: "Have your swyp-out partner drop you content!"
         default: "Drop the content on whom you'd like to send it to."
         drop:    "Drop to send."
         sending: "Sending now..."
         signIn: "go to d.swyp.us for a demo account, then refresh"
-        receive: "receive swyps here"
         refresh: "you must refresh to get another!"
       dataToSend: undefined #the data to be sent on swyp out
       pending: [] #any pending content for receipt
@@ -317,6 +317,7 @@
       @vis = d3.select("body").append("svg:svg").attr("class", "hidden")
       @setupBubbles json
       @registerEvents()
+      $("#instructions").text (@instructions["receive"])
+      $('#instructions').show()
     
-   
     window.swypClient = swypUI
