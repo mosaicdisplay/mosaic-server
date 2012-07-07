@@ -14,7 +14,7 @@
       vis: undefined
       force: d3.layout.force()
       instructions:
-        receive: "Have your swyp-out partner drop you content!"
+        receive: "This is where you receive content!"
         default: "Drop the content on whom you'd like to send it to."
         drop:    "Drop to send."
         sending: "Sending now..."
@@ -58,8 +58,9 @@
         d3.select(this).attr "class", (if collision then "hovered" else friendClass(d))
 
       # update the instructions if dragging over a person
-      $("#instructions").text @instructions[(if (window.swyp.isSignedIn == false) then "signIn" else if (collisionCount > 0) then "drop" else "default")]
-
+      property = (if (window.swyp.isSignedIn == false) then "signIn" else if (collisionCount > 0) then "drop" else "default")
+      $("#instructions").text swypUI.instructions[property]
+    
     swypOutSelected = ->
       # this is how swyp outs are triggered!
       swypUI.node.each (d, i)->
@@ -72,18 +73,6 @@
       imageJPEGType = "image/jpeg"
       imagePNGType = "image/png"
       
-      ###
-      pngFile = {
-        contentURL : swypUI.contentURLs?.png
-        contentMIME : imagePNGType
-      }
-
-      jpegFile = {
-        contentURL : "http://fluid.media.mit.edu/people/natan/media/swyp/swyp.jpg"
-        contentMIME : imageJPEGType
-      }
-      ###
-
       base64PreviewImage = d.b64Preview
       previewImageURL = d.previewImageURL
            
@@ -242,7 +231,6 @@
             d.y = if @y then d.y + (@y - d.y) * (damper + 0.71) * e.alpha else 400
           "translate(#{d.x},#{d.y})"
 
-    # Ethan, cool thanks, this is how you add a new incoming swyp!
     # expects an object: {objectID: 1, 
     #                     userName:'Ethan', 
     #                     userImageURL: 'http://', # here's a gravitar link or whatever of the user
@@ -297,27 +285,24 @@
         ).on('click', (e)-> e.preventDefault()
         ).on(events[0], (e)-> e.stopPropagation())
 
-    swypUI.demoObj = (fakeID)->
-      fakeID ?= Math.floor(Math.random()*101)
-      {objectID: fakeID, userName: 'Ethan Sherbondy', thumbnailURL: 'https://www.google.com/logos/2012/doisneau12-sr.png', fullURL: 'https://www.google.com/logos/2012/doisneau12-hp.jpg', userImageURL: 'http://gravatar.com/avatar/7e1157e2c6cad16d4d4ff37d6bd20acf'}
-
     swypUI.initialize = (json)->
       if swypUI.canSwypOut == false || window.swyp.isSignedIn == false
-        $("#instructions").text (if (window.swyp.isSignedIn == false) then @instructions["signIn"] else @instructions["receive"])
+        $("#instructions").text (if (window.swyp.isSignedIn == false) then swypUI.instructions["signIn"] else swypUI.instructions["receive"])
         $('#instructions').show()
+        $('#login_button').show()
       else
-        $("#instructions").text (@instructions["default"])
+        $("#instructions").text (swypUI.instructions["receive"])
+        $('#instructions').show()
+        $('#login_button').hide()
       window.addEventListener "message", @receiveMessage, false
       swyp.dataAvailableCallback = (swypItem, err) =>
         console.log "data available callback for swyp item#{swypItem}"
         window.location = swypItem.contentURL
-        $("#instructions").text (@instructions["refresh"])
+        $("#instructions").text (swypUI.instructions["refresh"])
         $('#instructions').show()
 
       @vis = d3.select("body").append("svg:svg").attr("class", "hidden")
       @setupBubbles json
       @registerEvents()
-      $("#instructions").text (@instructions["receive"])
-      $('#instructions').show()
     
     window.swypClient = swypUI

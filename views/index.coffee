@@ -19,7 +19,7 @@ div '#account', ->
   if not @token
     a '#login_button', href:'#', -> 'Login/Register'
   else
-    a '#logout_button', href: '/logout', -> 'Logout'
+    a '#login_button', href: '/logout', -> 'Logout'
 
 
 div '#debug', ->
