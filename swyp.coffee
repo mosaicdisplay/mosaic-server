@@ -506,13 +506,17 @@ swypApp = require('zappa').app ->
         @emit badData: {}
         return
       for type in @data.typeGroups
-         typeGroupObj = new TypeGroup {contentMIME: type.contentMIME} #no upload or completion date or timeouts
-         if type.contentURL?
-           console.log "url included #{type.contentURL}"
-           typeGroupObj.contentURL = type.contentURL
-           typeGroupObj.uploadCompletionDate = new Date()
-         typeGroupsToSave.push typeGroupObj #this gets saved
-         typeGroupsToSend.push type.contentMIME #this gets emitted 
+        if type?.contentMIME? == false
+          console.log "bug: for some reason type.contentMIME is bad for type: ", type
+          @emit badData: {}
+          return
+        typeGroupObj = new TypeGroup {contentMIME: type.contentMIME} #no upload or completion date or timeouts
+        if type.contentURL?
+          console.log "url included #{type.contentURL}"
+          typeGroupObj.contentURL = type.contentURL
+          typeGroupObj.uploadCompletionDate = new Date()
+        typeGroupsToSave.push typeGroupObj #this gets saved
+        typeGroupsToSend.push type.contentMIME #this gets emitted 
 
       nextSwyp = new Swyp {previewImagePNGBase64: previewImage, previewImageURL: previewImageURL, swypSender: user.userID, dateCreated: swypTime, dateExpires: swypExpire, typeGroups: typeGroupsToSave}
       nextSwyp.save (error) =>
