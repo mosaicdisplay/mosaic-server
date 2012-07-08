@@ -1,44 +1,233 @@
-html{background:rgba(0,0,0,0.75);font-family:'Helvetica Neue','Helvetica',sans-serif;-webkit-text-size-adjust:none;overflow:hidden;height:auto}
-html,body{margin:0;padding:0}
-.hidden{opacity:0}
-.link{stroke:none}
-.nodetext{pointer-events:none;font:16px sans-serif;font-weight:bold;padding:16px}
-.hovered .nodetext{fill:#fff;stroke:none}
-svg{-webkit-transition:opacity .2s linear}
-.rect{fill:#ccc}
-.friend .rect{fill:#0c0}
-.hovered .rect{fill:#09c}
-#preview{width:50px;height:50px;position:absolute;display:none;z-index:2;top:0;left:0}
-#instructions{position:absolute;display:none;width:100%;text-align:center;color:#fff;text-shadow:0 1px 0 #000;font-size:32px;font-weight:200;padding:16px;top:0;left:0}
-#swypMessages{position:absolute;top:64px;left:0;width:100%;color:#fff}
-.swypStatusControls,.swypOutControls{position:absolute;z-index:3}
-.swypStatusControls{margin-top:32px}
-.swyp_thumb{display:block;position:fixed;z-index:4;margin:-25px;text-decoration:none;-webkit-transition:margin .5s linear;}
-.swyp_thumb span{background:rgba(0,0,0,0.50);color:#fff;border-radius:8px;padding:4px 8px;line-height:1.5;display:block;position:absolute;width:160px;text-align:center}
-.swyp_thumb .thumb_image{width:100px;height:100px;box-shadow:0 0 8px rgba(0,0,0,0.50)}
-.swyp_thumb .user_image{width:24px;height:24px;float:left}
-.top{top:0;left:50%;}
-.top span{margin-top:16px;margin-left:-42px}
-.right{top:50%;right:0;}
-.right span{margin-left:-200px;margin-top:-64px}
-.bottom{bottom:0;left:50%;}
-.bottom span{margin-top:-144px;margin-left:-42px}
-.left{top:50%;left:0;}
-.left span{margin-top:-64px;margin-left:124px}
-#account{position:absolute;right:0;top:0;z-index:100;display:block}
-#login_button,#logout_button{display:block;float:right;width:160px;margin:16px;padding:8px;background:#fff;color:#000;text-decoration:none;font-weight:bold;border-radius:12px;text-align:center;}
-#login_button:hover,#logout_button:hover{background:#09c;color:#fff}
-#login_button.active,#logout_button.active{border-radius:12px 12px 0 0;}
-#login_button.active:hover,#logout_button.active:hover{background:#fff;color:#000}
-#login{margin:51px 16px;width:280px;background:#fff;padding:16px;font-size:16px;z-index:100;}
-#login input,#login button{font-size:inherit;display:block;padding:8px;-webkit-appearance:none}
-#login input{margin:0 0 16px 0;border:1px solid #ccc;width:260px;border-radius:none}
-#login button{position:relative;width:280px;border:0;background-color:#0c0;color:#fff;font-weight:bold;border-radius:8px;}
-#login button:hover{background:#00a300}
-#login button:active{top:1px}
-#avatar{width:36px;height:36px;position:absolute;margin-left:242px;background:#ccc}
-@media only screen and (max-device-width: 480px){body.portrait{width:100%}
-body.landscape{width:640px}
-#avatar{margin-top:3px}
-#instructions{font-size:20px}
-}#debug{display:none}
+html {
+  background: rgba(0,0,0,0.75);
+  font-family: 'Helvetica Neue', 'Helvetica', sans-serif;
+  -webkit-text-size-adjust: none;
+  overflow: hidden;
+  height: auto;
+}
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+.hidden {
+  opacity: 0;
+}
+.link {
+  stroke: none;
+}
+.nodetext {
+  pointer-events: none;
+  font: 16px sans-serif;
+  font-weight: bold;
+  padding: 16px;
+}
+.hovered .nodetext {
+  fill: #fff;
+  stroke: none;
+}
+svg {
+  -webkit-transition: opacity 0.2s linear;
+}
+.rect {
+  fill: #ccc;
+}
+.friend .rect {
+  fill: #0c0;
+}
+.hovered .rect {
+  fill: #09c;
+}
+#preview {
+  width: 50px;
+  height: 50px;
+  position: absolute;
+  display: none;
+  z-index: 2;
+  top: 0px;
+  left: 0px;
+}
+#instructions {
+  position: absolute;
+  display: none;
+  width: 100%;
+  text-align: center;
+  color: #fff;
+  text-shadow: 0px 1px 0px #000;
+  font-size: 32px;
+  font-weight: 200;
+  padding: 0px;
+  top: 0px;
+  left: 0px;
+}
+#swypMessages {
+  position: absolute;
+  top: 64px;
+  left: 0;
+  width: 100%;
+  color: #fff;
+}
+.swypStatusControls,
+.swypOutControls {
+  position: absolute;
+  z-index: 3;
+}
+.swypStatusControls {
+  margin-top: 32px;
+}
+.swyp_thumb {
+  display: block;
+  position: fixed;
+  z-index: 4;
+  margin: -25px;
+  text-decoration: none;
+  -webkit-transition: margin 0.5s linear;
+}
+.swyp_thumb span {
+  background: rgba(0,0,0,0.5);
+  color: #fff;
+  border-radius: 8px;
+  padding: 4px 8px;
+  line-height: 1.5;
+  display: block;
+  position: absolute;
+  width: 160px;
+  text-align: center;
+}
+.swyp_thumb .thumb_image {
+  width: 100px;
+  height: 100px;
+  box-shadow: 0px 0px 8px rgba(0,0,0,0.5);
+}
+.swyp_thumb .user_image {
+  width: 24px;
+  height: 24px;
+  float: left;
+}
+.top {
+  top: 0;
+  left: 50%;
+}
+.top span {
+  margin-top: 16px;
+  margin-left: -42px;
+}
+.right {
+  top: 50%;
+  right: 0;
+}
+.right span {
+  margin-left: -200px;
+  margin-top: -64px;
+}
+.bottom {
+  bottom: 0;
+  left: 50%;
+}
+.bottom span {
+  margin-top: -144px;
+  margin-left: -42px;
+}
+.left {
+  top: 50%;
+  left: 0;
+}
+.left span {
+  margin-top: -64px;
+  margin-left: 124px;
+}
+#account {
+  position: absolute;
+  right: 0;
+  top: 0;
+  z-index: 100;
+  display: block;
+}
+#login_button,
+#logout_button {
+  display: block;
+  float: right;
+  width: 160px;
+  margin: 16px;
+  padding: 8px;
+  background: #fff;
+  color: #000;
+  text-decoration: none;
+  font-weight: bold;
+  border-radius: 12px;
+  text-align: center;
+}
+#login_button:hover,
+#logout_button:hover {
+  background: #09c;
+  color: #fff;
+}
+#login_button.active,
+#logout_button.active {
+  border-radius: 12px 12px 0px 0px;
+}
+#login_button.active:hover,
+#logout_button.active:hover {
+  background: #fff;
+  color: #000;
+}
+#login {
+  margin: 51px 16px;
+  width: 280px;
+  background: #fff;
+  padding: 16px;
+  font-size: 16px;
+  z-index: 100;
+}
+#login input,
+#login button {
+  font-size: inherit;
+  display: block;
+  padding: 8px;
+  -webkit-appearance: none;
+}
+#login input {
+  margin: 0 0 16px 0;
+  border: 1px solid #ccc;
+  width: 260px;
+  border-radius: none;
+}
+#login button {
+  position: relative;
+  width: 280px;
+  border: 0px;
+  background-color: #0c0;
+  color: #fff;
+  font-weight: bold;
+  border-radius: 8px;
+}
+#login button:hover {
+  background: #00a300;
+}
+#login button:active {
+  top: 1px;
+}
+#avatar {
+  width: 36px;
+  height: 36px;
+  position: absolute;
+  margin-left: 242px;
+  background: #ccc;
+}
+@media only screen and (max-device-width: 480px) {
+  body.portrait {
+    width: 100%;
+  }
+  body.landscape {
+    width: 640px;
+  }
+  #avatar {
+    margin-top: 3px;
+  }
+  #instructions {
+    font-size: 20px;
+  }
+}
+#debug {
+  display: none;
+}
