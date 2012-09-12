@@ -130,7 +130,7 @@ swypApp = require('zappa').app ->
 
 # checkyourselfbeforeyouwreckyourself.... asynchronous recersion, yo.
   recursiveGetAccountsAtLocationArray = (index, locationsArray, uniqueAccounts, callback) => #recursive function #callback(error, uniqueAccounts)
-    maxDistanceRadial = 1/6378 #in radial coord km/radiusEarth *ONLY WORKS ON EARTH*
+    maxDistanceRadial = 10/6378 #in radial coord km/radiusEarth *ONLY WORKS ON EARTH*
     nextAccounts = []
     nextAccounts = locationsArray if locationsArray?
     if locationsArray[index]?
@@ -194,7 +194,7 @@ swypApp = require('zappa').app ->
   # publicID: the internal mongo _id, instead of userID, to maintain email address confidentiality
   # username, the non-unique public id, and userImageURL
   relevantAccountsNearSession = (session, callback) -> #callback(relevantUpdate, theSession)
-    Account.find {"sessions.location" : { $nearSphere : session.location, $maxDistance : 1/6378  }}, (err, docs) =>
+    Account.find {"sessions.location" : { $nearSphere : session.location, $maxDistance : 10/6378  }}, (err, docs) =>
       if err?
          console.log "error on session location lookup #{err}"
          return
