@@ -308,9 +308,10 @@ swypApp = require('zappa').app ->
         console.log "match user"
         
         availableSessions = []
-        for ses in matchingUser.sessions
-          if (sessionIsActive ses) == false
-            availableSessions.push(ses)
+        console.log "doesn't scale: assuming all sessions are active!"
+        #for ses in matchingUser.sessions
+        #  if (sessionIsActive ses) == false
+        #    availableSessions.push(ses)
 
         if availableSessions.length == 0
           current_date = (new Date()).valueOf().toString()
