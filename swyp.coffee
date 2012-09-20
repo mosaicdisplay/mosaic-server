@@ -487,8 +487,7 @@ swypApp = require('zappa').app ->
 
   @on swypOut: ->
     tokenValidate @data.token, (user, session) =>
-      if session? == false || user?.userName == 'guest'
-        console.log "unauthorized user: #{user?.userName}"
+      if session? == false
         @emit unauthorized: {}
         return
       #implement function to evaluate user token and abort if invalid
