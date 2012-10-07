@@ -503,7 +503,7 @@ swypApp = require('zappa').app ->
      
       typeGroupsToSave = [] #this is for the datastore
       typeGroupsToSend = [] #this is for the swyp-out event
-      if @data.typeGroups? == false || @data.typeGroups == null || @data.typeGroups == [null]
+      if @data.typeGroups? == false || @data.typeGroups?[0]? == false
         console.log "swypOut had bad typeGroupStructure #{@data.typeGroups}"
         @emit badData: {}
         return
