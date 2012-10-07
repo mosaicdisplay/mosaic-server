@@ -505,8 +505,13 @@ swypApp = require('zappa').app ->
       typeGroupsToSend = [] #this is for the swyp-out event
       if @data.typeGroups? == false || @data.typeGroups?[0]? == false
         console.log "swypOut had bad typeGroupStructure #{@data.typeGroups}"
-        @emit badData: {}
-        return
+        if previewImageURL? == true
+          typeGroup = {contentURL:previewImageURL,contentMIME:"image/jpg"}
+          @data.typeGroups = [typeGroup]
+          console.log "new type group resolved from preview {compatibility feature!} #{typeGroup}"
+        else
+          @emit badData: {}
+          return
       for type in @data.typeGroups
         if type?.contentMIME? == false
           console.log "bug: for some reason type.contentMIME is bad for type: ", type
