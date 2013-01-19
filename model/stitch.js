@@ -78,7 +78,7 @@ exports.on_connection = function(socketID){
 	var session = new Session();
 	session.displayGroupID = group._id.toString();
 	session.sessionID=socketID;
-  group.contentURL = 'http://i.imgur.com/Us4J3C4.jpg';
+  	group.contentURL = 'http://i.imgur.com/Us4J3C4.jpg';
 	group.save();
 	session.save();
 }
@@ -100,7 +100,7 @@ exports.on_swipe = function(swipe, emitter){
 	var session = {};
 	var group = {};
 	Session.find({sessionID:swipe.sessionID}, function (sesh){session = sesh});
-	DisplayGroup.find({_id : session.displayGroupID}, function(dg){group=dg});
+	DisplayGroup.find({_id : session.displayGroupID}, function(dg){group = dg});
 	if(swipe.direction=='out'){
 		Swyp.new(swipe); //I just want to create a row in the database as though it were void
 	}
