@@ -164,12 +164,13 @@ function connectingSwipe(swipe){
 	var end = swipe.dateCreated;
 	var start = end-delta;
 	var swipes = {};
-	Swyp.find({"dateCreated": {"$gte": start, "$lt": end}}, function(result){swipes = result }).limit(2);
-	if(swipes.length==2){
-		//var swipeCoord = {"x":((swipes[0].swypPoint.x+swipes[1].swypPoint.x)/2), "y":((swipes[0].swypPoint.y+swipes[1].swypPoint.y)/2)};
-		return swipes;
-	}
-	else{
-		return false;
-	}
+	Swyp.find({"dateCreated": {"$gte": start, "$lt": end}}, function(swipes){
+    if(swipes.length==2){
+      //var swipeCoord = {"x":((swipes[0].swypPoint.x+swipes[1].swypPoint.x)/2), "y":((swipes[0].swypPoint.y+swipes[1].swypPoint.y)/2)};
+      return swipes;
+    }
+    else{
+      return false;
+    }
+  }).limit(2);
 }
