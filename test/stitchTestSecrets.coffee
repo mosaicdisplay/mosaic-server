@@ -13,4 +13,3 @@ exports.validIOIDsForAGroup = ['10680437041611548230','10680437041611548231','10
 
 exports.validSwipeOutForSIOID = (id) ->
   return {sessionID: id, screenSize:{width: 320, height: 548}, swypPoint: {x: 320, y: 200}, direction: "out"}
-}
