@@ -56,10 +56,13 @@ SwypSchema = new Schema({
 });
 
 Session = mongoose.model('Sessions', SessionSchema);
+exports.Session = Session
 
 Swyp = mongoose.model('Swyp', SwypSchema);
+exports.Swyp = Swyp
 
 DisplayGroup = mongoose.model('Display', DisplaySchema);
+exports.DisplayGroup = DisplayGroup
 
 mongoose.connect(secrets.mongoDBConnectURLSecret);
 

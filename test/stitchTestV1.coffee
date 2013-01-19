@@ -25,19 +25,38 @@ describe 'stitch', =>
         should.exist session
         should.exist group
         should.not.exist err
+        generatedObjects.push session
+        generatedObjects.push group
         done()
     it 'should return session with sessionID set to socketID', (done) ->
-      stitch.on_connection scrts.validIOIDs[0], (err, session, group) ->
+      stitch.on_connection scrts.validIOIDs[1], (err, session, group) ->
         session.sessionID.should.eql scrts.validIOIDs[0]
-        done()
+        generatedObjects.push session
+        generatedObjects.push group
+       done()
     it 'should set session displayGroupID to objectID of displayGroup', (done) ->
-      stitch.on_connection scrts.validIOIDs[0], (err, session, group) ->
+      stitch.on_connection scrts.validIOIDs[2], (err, session, group) ->
         session.displayGroupID.should.eql group._id.toString()
+        generatedObjects.push session
+        generatedObjects.push group
         done()
-    it 'should return err when passed no socketID', (done) ->
+    it 'should return err when passed pre-existing socketid', (done) ->
+      stitch.on_connection scrts.validIOIDs[0], (err, session, group) ->
+        should.exist err
+        done()
+    it 'should return err when passed no socketid', (done) ->
       stitch.on_connection null, (err, session, group) ->
         should.exist err
         done()
+   
+   describe '#on_disconnection', =>
+    it 'should return a group and session and no err when passed a socketID', (done) ->
+      stitch.on_connection scrts.validIOIDs[0], (err, session, group) ->
+        should.exist session
+        should.exist group
+        should.not.exist err
+        done()
+
 
 ###
     it 'should shorten unique (not in db) urls with unique short code', (done) ->
