@@ -15,11 +15,7 @@
 h1 "#instructions",
 img "#preview",
 
-div '#account', ->
-  if not @token
-    a '#login_button', href:'#', -> 'Login/Register'
-  else
-    a '#login_button', href: '/logout', -> 'Logout'
+h1 'Use join on mobile'
 
 
 div '#debug', ->
