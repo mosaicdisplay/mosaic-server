@@ -4,7 +4,7 @@ secrets = require ('./secrets')
 shorturl = require('./routes/shorturl')
 home = require('./routes/home')
 
-stitch = require('./model/stitch.coffee')
+#stitch = require('./model/stitch')
 
 mongoose = require('mongoose')
 Schema = mongoose.Schema
@@ -75,6 +75,7 @@ stitchApp = zappa.app ->
   #client2server
   @on connection: ->
     console.log "connected id#{@id}"
+    stitch.on_connection @id
     #create session
     #create display group
     #adding new session, and creating new displayGroup
@@ -93,11 +94,12 @@ stitchApp = zappa.app ->
     console.log "disafiliate called with id #{@id}"
 
   emitSampleToSocketID = (socketID, callback) =>
-    socketForSocketID(socketID).emit updateDisplay: {url: sampleURL, boundarySize: {width: 1500, height: 997}, origin: {x:320, y:200}}
+    socketForSocketID(socketID).emit updateDisplay: {url: sampleURL, boundarySize: {width: 1500, height: 997}, screenSize: {width: 320, height: 548}, origin: {x:320, y:200}}
 
   @client '/swyp.js': ->
     @connect()
- 
+    
+
 port = if process.env.PORT > 0 then process.env.PORT else 3000
 stitchApp.app.listen port
 console.log "starting on port # #{port}"
