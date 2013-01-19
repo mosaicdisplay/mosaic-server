@@ -70,20 +70,21 @@ exports.initializeConnection = function(socketID, callback) {
 };
 var delta = new Date(1000); //stackoverflow says this is ms
 
-exports.on_connection= function(socketID){
+exports.on_connection = function(socketID){
 	var group = new DisplayGroup();
-	var session = new Session(group);
+	var session = new Session();
+	session.displayGroupID = group._id.toString();
 	session.sessionID=socketID;
 }
-function disconnection(sesh){
+exports.on_disconnection = function(sesh){
 	Session.find({sessionID:sesh.sessionID}).delete;
 }
-function disaffiliate(sesh){
+exports.disaffiliate = function(sesh){
 	var group = new DisplayGroup();
 	group.boundarySize={"width":sesh.physicalSize.width, "height":sesh.physicalSize.height};
 	sesh.origin={"x":0,"y":0};
 }
-function on_swipe(swipe){
+exports.on_swipe = function(swipe){
 	var session= Session.find({_id : swipe.sessionID});
 	var group= DisplayGroup.find({_id : session.displayGroupID});
 	if(swipe.direction=='out'){
@@ -92,7 +93,7 @@ function on_swipe(swipe){
 	else{
 		Swyp.new(swipe); //same as above
 		var swipes = connectingSwipe(swipe)
-		var lastSwipeSession = Session.find(_id: swipes[0].sessionID);
+		var lastSwipeSession = Session.find{(_id: swipes[0].sessionID)};
 		var swipeCoord = {};
 		if(swipes==false){
 			return "no corresponding out-swipe within delta time";
@@ -107,6 +108,8 @@ function on_swipe(swipe){
 			//add screen size to device origin to get new boundary size
 			group.boundarySize.width=session.origin.x+session.physicalSize.width;
 				group.boundarySize.width=session.origin.y+session.physicalSize.height;
+			session.save();
+			group.save();
 		}
 	}
 	return {"session":session,"displayGroup":group};
@@ -114,7 +117,7 @@ function on_swipe(swipe){
 function connectingSwipe(swipe){
 	var end = swipe.dateCreated;
 	var start = end-delta;
-	var swipes=Swyp.find({"created_on": {"$gte": start, "$lt": end}}).limit(2);
+	var swipes=Swyp.find({"dateCreated": {"$gte": start, "$lt": end}}).limit(2);
 	if(swipes.length==2){
 		//var swipeCoord = {"x":((swipes[0].swypPoint.x+swipes[1].swypPoint.x)/2), "y":((swipes[0].swypPoint.y+swipes[1].swypPoint.y)/2)};
 		return swipes;
