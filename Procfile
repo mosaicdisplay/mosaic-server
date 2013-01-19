@@ -1,1 +1,1 @@
-heb: supervisor swyp.coffee
+web: supervisor swyp.coffee
