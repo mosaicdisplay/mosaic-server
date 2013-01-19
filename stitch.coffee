@@ -14,6 +14,9 @@ ObjectId = mongoose.SchemaTypes.ObjectId
 
 zappa = require('zappa')
 
+sampleURL = "http://upload.wikimedia.org/wikipedia/commons/8/8c/K2%2C_Mount_Godwin_Austen%2C_Chogori%2C_Savage_Mountain.jpg"
+sampleContentSize = {width: 3,008, height: 2000}
+
 stitchApp = zappa.app ->
   @use 'bodyParser', 'static', 'cookies', 'cookieParser', session: {secret: secrets.sessionSecret}
   #@use  mongooseAuth.middleware()
@@ -36,10 +39,12 @@ stitchApp = zappa.app ->
   @get '/', home.home
 
   socketForSession = (session) =>
-    if @io.sockets.sockets[session.socketID]?
-      return @io.sockets.sockets[session.socketID]
+    return socketForSocketID(session?.socketID)
+  
+  socketForSocketID = (socketID) =>
+    if @io.sockets.sockets[socketID]?
+      return @io.sockets.sockets[socketID]
     else
-      #console.log "session no socket #{session.socketID}"
       return null
   
   #returns whether a given session is active
@@ -67,80 +72,31 @@ stitchApp = zappa.app ->
         callback null, obj
   
 
+  #client2server
   @on connection: ->
     console.log "connected id#{@id}"
-    @emit connected:{status: "cool"}
+    #create session
+    #create display group
+    #adding new session, and creating new displayGroup
   
   @on disconnect: ->
     console.log "disconnected id#{@id}"
+    #delete session
 
-  @on statusUpdate: ->
-    tokenValidate @data.token, (user, session) =>
-      if session? == false
-        @emit unauthorized: {}
-        return
-      session.socketID = @id
-      location  = @data.location
-      oldLocation = session.location
-      session.location = location
-      #session.expiration = new Date(new Date().valueOf()+100) #no reason to expire
-      #console.log session.valueOf()
-      user.save (error) => #[{"location":[44.680997,10.317557],"socketID":"1998803106463826141","token":"TOKENBLAH_alex"}]
-        if error?
-          console.log "error saving user after StatusUpdate #{ error }"
-          @emit serverError: ->
-        else
-          @emit updateGood: {}
-          updateUniqueActiveSessionsNearLocationArray [location, oldLocation], (err) =>
-            console.log "nearby update error #{err}"
+  @on swypOccured: ->
+    console.log "swyp occured with id #{@id}, data: #{@data}"
+    setTimeout ( =>
+      console.log "emitting sample to id #{@id}"
+      emitSampleToSocketID(@id)), 1000
 
-  typeGroupFromMIMEInSwyp = (contentMIMEType, swyp) =>
-    for type in swyp.typeGroups
-      if contentMIMEType == type.contentMIME
-        return type
-    return null
+  @on disaffiliate: ->
+    console.log "disafiliate called with id #{@id}"
 
-  @on swypIn: ->
-    tokenValidate @data.token, (user, session) =>
-      if session? == false
-        @emit unauthorized: {}
-        return
-      contentID   = @data.id
-      contentType = @data.contentMIME
-      swypForID contentID, (err, swyp) =>
-        if swyp?
-          typeGroupObj = typeGroupFromMIMEInSwyp contentType, swyp
-          if typeGroupObj? && typeGroupObj.uploadCompletionDate?
-            @emit dataAvailable:
-              {id: contentID, \
-              contentMIME: contentType,\
-              contentURL: typeGroupObj.contentURL}
-          else
-            uploadURL   = "http://newUploadURL"
-            @emit dataPending:
-              {id: contentID, \
-               type: contentType}
-            @broadcast dataRequest:
-              {id: contentID, \
-               type: contentType,
-               uploadURL: uploadURL}
-     
-  @on uploadCompleted: ->
-    tokenValidate @data.token, (user, session) =>
-      if session? == false
-        @emit unauthorized: {}
-        return
-      contentID   = @data.id
-      contentType = @data.type
-      uploadURL   = "http://dbRetrievedUploadURL"
-      console.log @io.sockets
-      @broadcast dataAvailable:
-         {id: contentID, \
-         type: contentType,\
-         uploadURL: uploadURL}
-      #io.sockets.sockets[sid].json.send -> #send to particularly waiting clients
+  emitSampleToSocketID = (socketID, callback) =>
+    socketForSocketID(socketID).emit updateDisplay: {url: sampleURL, boundarySize: {width: 1500, height: 997}, origin: {x:320, y:200}}
 
-  #can also add client side js here
+  @client '/swyp.js': ->
+    @connect()
  
 port = if process.env.PORT > 0 then process.env.PORT else 3000
 stitchApp.app.listen port
