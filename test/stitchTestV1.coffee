@@ -25,15 +25,19 @@ describe 'stitch', =>
         should.exist session
         should.exist group
         should.not.exist err
+        done()
     it 'should return session with sessionID set to socketID', (done) ->
       stitch.on_connection scrts.validIOIDs[0], (err, session, group) ->
         session.sessionID.should.eql scrts.validIOIDs[0]
+        done()
     it 'should set session displayGroupID to objectID of displayGroup', (done) ->
       stitch.on_connection scrts.validIOIDs[0], (err, session, group) ->
         session.displayGroupID.should.eql group._id.toString()
+        done()
     it 'should return err when passed no socketID', (done) ->
       stitch.on_connection null, (err, session, group) ->
         should.exist err
+        done()
 
 ###
     it 'should shorten unique (not in db) urls with unique short code', (done) ->
