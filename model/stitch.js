@@ -7,6 +7,10 @@ mongoose = require('mongoose');
 Schema = mongoose.Schema;
 
 ObjectId = mongoose.SchemaTypes.ObjectId;
+exports.ObjectId = ObjectID
+
+makeObjectID = mongoose.mongo.BSONPure.ObjectID.fromString
+exports.makeObjectID = makeObjectID
 
 SessionSchema = new Schema({
   sessionID: {
