@@ -75,7 +75,7 @@ stitchApp = zappa.app ->
   #client2server
   @on connection: ->
     console.log "connected id#{@id}"
-    stitch.on_connection @id
+    #stitch.on_connection @id
     #create session
     #create display group
     #adding new session, and creating new displayGroup
