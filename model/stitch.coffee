@@ -27,7 +27,6 @@ DisplayGroupSchema = new Schema {
 SwypSchema = new Schema {
   sessionID : String
   dateCreated : Date
-  physicalSize: {width: Number, height: Number}
   swypPoint: {x:Number, y:Number} #from bottom left
   direction: String #"in" or "out"
 }
