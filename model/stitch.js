@@ -79,7 +79,9 @@ exports.on_connection = function(socketID){
 	session.save();
 }
 exports.on_disconnection = function(socketID){
-	Session.find({sessionID:socketID}, function (session){session.delete});
+	Session.find({sessionID:socketID}, function (session){
+    session.delete
+  });
 }
 exports.disaffiliate = function(socketID){
 	var group = new DisplayGroup();

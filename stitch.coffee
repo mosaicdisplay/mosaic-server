@@ -81,16 +81,19 @@ stitchApp = zappa.app ->
     #adding new session, and creating new displayGroup
   
   @on disconnect: ->
+    stitch.on_disconnection @id
     console.log "disconnected id#{@id}"
     #delete session
 
   @on swypOccurred: ->
+    stitch.on_swipe @data
     console.log "swyp occurred with id #{@id}, data: #{@data}"
     setTimeout ( =>
       console.log "emitting sample to id #{@id}"
       emitSampleToSocketID(@id)), 1000
 
   @on disaffiliate: ->
+    stitch.disaffiliate @id
     console.log "disafiliate called with id #{@id}"
 
   emitSampleToSocketID = (socketID, callback) =>
