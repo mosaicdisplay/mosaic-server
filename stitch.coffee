@@ -50,9 +50,30 @@ stitchApp = zappa.app ->
       #console.log "not active #{socketForSession(session)}"
       return false
 
-  @on connection: ->
-    @emit updateRequest: {time: new Date()}
+  swypForID = (id, callback) => #{callback(err, swypObj)}
+    if id? == false
+       callback "noID", null
+       return
+    try
+      objID = mongoose.mongo.BSONPure.ObjectID.fromString(id)
+    catch err
+      console.log "objID err: #{err} from id #{id}"
+    Swyp.findOne {_id: objID}, (err, obj) =>
+      if err? or (obj? == false)
+         console.log "no swyp for id #{id} found, w. err #{err}"
+         callback err, null
+         return
+      if obj?
+        callback null, obj
   
+
+  @on connection: ->
+    console.log "connected id#{@id}"
+    @emit connected:{status: "cool"}
+  
+  @on disconnect: ->
+    console.log "disconnected id#{@id}"
+
   @on statusUpdate: ->
     tokenValidate @data.token, (user, session) =>
       if session? == false
@@ -73,104 +94,12 @@ stitchApp = zappa.app ->
           updateUniqueActiveSessionsNearLocationArray [location, oldLocation], (err) =>
             console.log "nearby update error #{err}"
 
-  @on swypOut: ->
-    tokenValidate @data.token, (user, session) =>
-      if session? == false
-        @emit unauthorized: {}
-        return
-      #implement function to evaluate user token and abort if invalid
-      supportedTypes = @data.typeGroups
-      previewImage = @data.previewImagePNGBase64
-      previewImageURL = @data.previewImageURL
-      if (previewImageURL? == false || previewImageURL == "")
-        previewImageURL = null
-      recipientTo    = @data.to?.trim()
-      fromSender     = {publicID: user._id, userImageURL: user.userImageURL, userName: user.userName}
-      swypTime       = new Date()
-      swypExpire = new Date(new Date().valueOf()+50) #expires in 50 seconds
-     
-      typeGroupsToSave = [] #this is for the datastore
-      typeGroupsToSend = [] #this is for the swyp-out event
-      if @data.typeGroups? == false || @data.typeGroups?[0]? == false
-        console.log "swypOut had bad typeGroupStructure #{@data.typeGroups}"
-        if previewImageURL? == true
-          typeGroup = {contentURL:previewImageURL,contentMIME:"image/jpg"}
-          @data.typeGroups = [typeGroup]
-          console.log "new type group resolved from preview {compatibility feature!} #{typeGroup}"
-        else
-          @emit badData: {}
-          return
-      for type in @data.typeGroups
-        if type?.contentMIME? == false
-          console.log "bug: for some reason type.contentMIME is bad for type: ", type
-          @emit badData: {}
-          return
-        typeGroupObj = new TypeGroup {contentMIME: type.contentMIME} #no upload or completion date or timeouts
-        if type.contentURL?
-          console.log "url included #{type.contentURL}"
-          typeGroupObj.contentURL = type.contentURL
-          typeGroupObj.uploadCompletionDate = new Date()
-        typeGroupsToSave.push typeGroupObj #this gets saved
-        typeGroupsToSend.push type.contentMIME #this gets emitted 
-
-      nextSwyp = new Swyp {previewImagePNGBase64: previewImage, previewImageURL: previewImageURL, swypSender: user.userID, dateCreated: swypTime, dateExpires: swypExpire, typeGroups: typeGroupsToSave}
-      nextSwyp.save (error) =>
-        if error != null
-          console.log "didFailSave", error
-          return
-        if previewImageURL? == false
-          previewImageURL = "#{primaryHost}/preview/#{nextSwyp._id}"
-          nextSwyp.previewImageURL = previewImageURL
-          nextSwyp.save()
-        swypOutPacket = {id: nextSwyp._id, swypSender: fromSender, dateCreated: nextSwyp.dateCreated, dateExpires: nextSwyp.dateExpires, availableMIMETypes: typeGroupsToSend, previewImageURL: previewImageURL}
-        @emit swypOutPending: swypOutPacket #this sends only the MIMES
-        console.log "new swypOut saved"
-        #if no target recpient, you're swyping to area/'room'
-        if recipientTo? == false || recipientTo == ""
-          accountsAndSessionsNearLocation session.location, (sessionsByAccount, allSessions) =>
-             if allSessions?
-              for updateSession in allSessions
-                socket = socketForSession(updateSession)
-                if socket? && updateSession.socketID != session.socketID
-                   console.log "updating swypout for sessionID #{updateSession.socketID}"
-                   socket.emit('swypInAvailable', swypOutPacket)
-        else
-          console.log "swypOut targetted to #{recipientTo}"
-          #otherwise, there is a target recipient
-          accountForPublicUserID recipientTo, (error,account, activeSessions) =>
-            if activeSessions?
-              for updateSession in activeSessions
-                socket = socketForSession(updateSession)
-                if socket? && updateSession.socketID != session.socketID
-                   console.log "updating swypout for sessionID #{updateSession.socketID}"
-                   socket.emit('swypInAvailable', swypOutPacket)
-
-  swypForID = (id, callback) => #{callback(err, swypObj)}
-    if id? == false
-       callback "noID", null
-       return
-    try
-      objID = mongoose.mongo.BSONPure.ObjectID.fromString(id)
-    catch err
-      console.log "objID err: #{err} from id #{id}"
-    Swyp.findOne {_id: objID}, (err, obj) =>
-      if err? or (obj? == false)
-         console.log "no swyp for id #{id} found, w. err #{err}"
-         callback err, null
-         return
-      if obj?
-        callback null, obj
-  
   typeGroupFromMIMEInSwyp = (contentMIMEType, swyp) =>
     for type in swyp.typeGroups
       if contentMIMEType == type.contentMIME
         return type
     return null
 
-  ###
-  The @on swypIn event triggers from client's swypIn-action.
-  The client passes its requested contentMIME, and this server either immediately emits the contentURL at which the content of contentMIME is available, or it requests the upload of said MIME to a specific URL given by this server.
-  ###
   @on swypIn: ->
     tokenValidate @data.token, (user, session) =>
       if session? == false
@@ -211,43 +140,8 @@ stitchApp = zappa.app ->
          uploadURL: uploadURL}
       #io.sockets.sockets[sid].json.send -> #send to particularly waiting clients
 
-  @coffee '/login.js': ->
-    updateOrientation = ->
-      orientation = 'portrait'
-      switch window.orientation
-        when 90 or -90 then orientation = 'landscape'
-      $('body').addClass orientation
-
-    $(->
-      # handle iphone
-      updateOrientation()
-      window.onorientationchange = updateOrientation
-      window.scrollTo(0, 1) # hide status bar on iphone
-      
-      $('#user_id').live 'blur', (e)->
-        trimmed_mail = $(this).val().replace(/\s*/g,'').toLowerCase()
-        val = CryptoJS.MD5(trimmed_mail)
-        $('#avatar').attr('src',"http://gravatar.com/avatar/#{val}")
-
-      $('#account').on 'mousedown touchstart', (e)->
-        e.stopPropagation()
-      $('#login_button').on 'click touchend', (e)->
-        e.preventDefault()
-        e.stopPropagation()
-        if not $(this).hasClass 'active'
-          if not $('#login').length
-            $.get '/login?ajax=true', (data)->
-              $content = jQuery data
-              $('#account').append $content
-              $('#user_id').focus()
-          else
-            $('#login').show()
-        else
-          $('#login').hide()
-
-        $(this).toggleClass 'active'
-    )
-
+  #can also add client side js here
+ 
 port = if process.env.PORT > 0 then process.env.PORT else 3000
 stitchApp.app.listen port
 console.log "starting on port # #{port}"
