@@ -15,7 +15,7 @@ ObjectId = mongoose.SchemaTypes.ObjectId
 zappa = require('zappa')
 
 sampleURL = "http://upload.wikimedia.org/wikipedia/commons/8/8c/K2%2C_Mount_Godwin_Austen%2C_Chogori%2C_Savage_Mountain.jpg"
-sampleContentSize = {width: 3,008, height: 2000}
+sampleContentSize = {width: 3008, height: 2000}
 
 stitchApp = zappa.app ->
   @use 'bodyParser', 'static', 'cookies', 'cookieParser', session: {secret: secrets.sessionSecret}

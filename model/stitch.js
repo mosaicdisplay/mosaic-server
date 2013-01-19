@@ -102,7 +102,7 @@ exports.on_swipe = function(swipe){
 		Swyp.new(swipe); //same as above
 		var swipes = connectingSwipe(swipe)
 		var lastSwipeSession = {};
-		Session.find{(_id: swipes[0].sessionID), function(sesh){lastSwipeSession = sesh}};
+		Session.find({_id: swipes[0].sessionID}, function(sesh){lastSwipeSession = sesh});
 		var swipeCoord = {};
 		if(swipes==false){
 			return "no corresponding out-swipe within delta time";
