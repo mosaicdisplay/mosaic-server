@@ -4,7 +4,7 @@ secrets = require ('./secrets')
 shorturl = require('./routes/shorturl')
 home = require('./routes/home')
 
-stitch = require('./model/st2')
+stitch = require('./model/stitch')
 
 mongoose = require('mongoose')
 Schema = mongoose.Schema
