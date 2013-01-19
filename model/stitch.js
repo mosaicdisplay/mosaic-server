@@ -56,10 +56,13 @@ SwypSchema = new Schema({
 });
 
 Session = mongoose.model('Sessions', SessionSchema);
+exports.Session = Session
 
 Swyp = mongoose.model('Swyp', SwypSchema);
+exports.Swyp = Swyp
 
 DisplayGroup = mongoose.model('Display', DisplaySchema);
+exports.DisplayGroup = DisplayGroup
 
 mongoose.connect(secrets.mongoDBConnectURLSecret);
 
@@ -75,6 +78,7 @@ exports.on_connection = function(socketID){
 	var session = new Session();
 	session.displayGroupID = group._id.toString();
 	session.sessionID=socketID;
+  group.contentURL = 'http://i.imgur.com/Us4J3C4.jpg';
 	group.save();
 	session.save();
 }
