@@ -105,4 +105,17 @@ exports.on_disconnection = (socketID, emitter, callback) -> #emitter(session, so
       sessionObj.delete (err) ->
         callback err
 
-
+#we need to add a new swipe object, then check for partner one
+#if partner one, we need to connect them via a shared displayGroup and call updateDisplayGroupsOfIDs
+exports.on_swipe = (socketID, swipeData, emitter, callback) ->
+  if swipeData? == false
+    callback "no data"
+    return
+  swyp = new Swyp {sessionID: socketID, dateCreated: new Date(), swypPoint: swipeData?.swypPoint , screenSize: swipeData?.screenSize, direction: swipeData.direction}
+  swyp.save (err) =>
+    floorDate = new Date(swyp.dataCreated.valueOf()-1000)
+    searchDir = "out"
+    if swyp.direction == "out"
+      searchDir = "in"
+    Swyp.findOne {dataCreated: {$gt: floorDate}, direction: searchDir}, (err, matchSwyp) ->
+      console.log "found partner: #{matchSwyp}"
