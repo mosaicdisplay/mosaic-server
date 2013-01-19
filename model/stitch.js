@@ -75,6 +75,7 @@ exports.on_connection = function(socketID){
 	var session = new Session();
 	session.displayGroupID = group._id.toString();
 	session.sessionID=socketID;
+  group.contentURL = 'http://i.imgur.com/Us4J3C4.jpg';
 	group.save();
 	session.save();
 }
