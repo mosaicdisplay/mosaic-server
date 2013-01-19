@@ -78,12 +78,13 @@ exports.on_connection = function(socketID){
 	var session = new Session();
 	session.displayGroupID = group._id.toString();
 	session.sessionID=socketID;
+  group.contentURL = 'http://i.imgur.com/Us4J3C4.jpg';
 	group.save();
 	session.save();
 }
 exports.on_disconnection = function(socketID){
 	Session.find({sessionID:socketID}, function (session){
-    session.delete
+    session.delete;
   });
 }
 exports.disaffiliate = function(socketID){
