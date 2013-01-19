@@ -83,8 +83,8 @@ stitchApp = zappa.app ->
     console.log "disconnected id#{@id}"
     #delete session
 
-  @on swypOccured: ->
-    console.log "swyp occured with id #{@id}, data: #{@data}"
+  @on swypOccurred: ->
+    console.log "swyp occurred with id #{@id}, data: #{@data}"
     setTimeout ( =>
       console.log "emitting sample to id #{@id}"
       emitSampleToSocketID(@id)), 1000
