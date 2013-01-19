@@ -72,7 +72,8 @@ var delta = new Date(1000); //stackoverflow says this is ms
 
 exports.on_connection = function(socketID){
 	var group = new DisplayGroup();
-	var session = new Session(group);
+	var session = new Session();
+	session.displayGroupID = group._id.toString();
 	session.sessionID=socketID;
 }
 exports.on_disconnection = function(sesh){
@@ -107,6 +108,8 @@ exports.on_swipe = function(swipe){
 			//add screen size to device origin to get new boundary size
 			group.boundarySize.width=session.origin.x+session.physicalSize.width;
 				group.boundarySize.width=session.origin.y+session.physicalSize.height;
+			session.save();
+			group.save();
 		}
 	}
 	return {"session":session,"displayGroup":group};
@@ -114,7 +117,7 @@ exports.on_swipe = function(swipe){
 function connectingSwipe(swipe){
 	var end = swipe.dateCreated;
 	var start = end-delta;
-	var swipes=Swyp.find({"created_on": {"$gte": start, "$lt": end}}).limit(2);
+	var swipes=Swyp.find({"dateCreated": {"$gte": start, "$lt": end}}).limit(2);
 	if(swipes.length==2){
 		//var swipeCoord = {"x":((swipes[0].swypPoint.x+swipes[1].swypPoint.x)/2), "y":((swipes[0].swypPoint.y+swipes[1].swypPoint.y)/2)};
 		return swipes;
