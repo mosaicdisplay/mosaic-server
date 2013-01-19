@@ -93,7 +93,7 @@ exports.on_disconnection = function(socketID, emitter) {
 exports.disaffiliate = function(socketID, emitter) {
 	Session.findOne({sessionID:socketID}, function (err, session){
     var group = new DisplayGroup();
-    group.boundarySize={"width":session.physicalSize.width, "height":session.physicalSize.height};
+    group.boundarySize = {"width":session.physicalSize.width, "height":session.physicalSize.height};
     group.save();
     session.displayGroupID = group._id.toString();
     session.origin={"x":0,"y":0};
