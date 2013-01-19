@@ -70,20 +70,20 @@ exports.initializeConnection = function(socketID, callback) {
 };
 var delta = new Date(1000); //stackoverflow says this is ms
 
-exports.on_connection= function(socketID){
+exports.on_connection = function(socketID){
 	var group = new DisplayGroup();
 	var session = new Session(group);
 	session.sessionID=socketID;
 }
-function disconnection(sesh){
+exports.on_disconnection = function(sesh){
 	Session.find({sessionID:sesh.sessionID}).delete;
 }
-function disaffiliate(sesh){
+exports.disaffiliate = function(sesh){
 	var group = new DisplayGroup();
 	group.boundarySize={"width":sesh.physicalSize.width, "height":sesh.physicalSize.height};
 	sesh.origin={"x":0,"y":0};
 }
-function on_swipe(swipe){
+exports.on_swipe = function(swipe){
 	var session= Session.find({_id : swipe.sessionID});
 	var group= DisplayGroup.find({_id : session.displayGroupID});
 	if(swipe.direction=='out'){
