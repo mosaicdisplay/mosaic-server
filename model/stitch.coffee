@@ -107,15 +107,38 @@ exports.on_disconnection = (socketID, emitter, callback) -> #emitter(session, so
 
 #we need to add a new swipe object, then check for partner one
 #if partner one, we need to connect them via a shared displayGroup and call updateDisplayGroupsOfIDs
-exports.on_swipe = (socketID, swipeData, emitter, callback) ->
+exports.on_swipe = (socketID, swipeData, emitter, callback) -> #callback (err)
   if swipeData? == false
     callback "no data"
     return
   swyp = new Swyp {sessionID: socketID, dateCreated: new Date(), swypPoint: swipeData?.swypPoint , screenSize: swipeData?.screenSize, direction: swipeData.direction}
   swyp.save (err) =>
     floorDate = new Date(swyp.dataCreated.valueOf()-1000)
-    searchDir = "out"
-    if swyp.direction == "out"
-      searchDir = "in"
+    searchDir = (swyp.direction == "out")? "in" : "out"
     Swyp.findOne {dataCreated: {$gt: floorDate}, direction: searchDir}, (err, matchSwyp) ->
       console.log "found partner: #{matchSwyp}"
+      if swyp.direction == "in"
+        pairSwyps swyp, matchSwyp, emitter, callback
+      else
+        pairSwyps matchSwyp, swyp, emitter, callback
+
+pairSwyps = (inSwyp, outSwyp, emitter, callback) -> #callback(err)
+  Session.findOne {sessionID: outSwyp.sessionID}, (err, masterSession) ->
+    if masterSession? == false
+      callback "missing session of id #{outSwyp.sessionID}"
+      return
+    Session.findOne {sessionID: inSwyp.sessionID}, (err, receivingSession) ->
+      if receivingSession? == false
+        callback "missing session of id #{inSwyp.sessionID}"
+        return
+     
+      inSwyp.delete()
+      outSwyp.delete()
+ 
+      #if the same, we disaffiliate the master -- the inverse
+      if masterSession.displayGroupID == receivingSession.displayGroupID
+        exports.disafilliate masterSession.sessionID, emitter, callback
+      else #if different, we inherit the master's session
+        receivingSession.displayGroupID = masterSession.displayGroupID
+        receivingSession.save (err) =>
+          updateDisplayGroupsOfIDs [masterSession.displayGroupID], emitter, callback
