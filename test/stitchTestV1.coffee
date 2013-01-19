@@ -84,9 +84,11 @@ describe 'stitch', =>
           generatedObjects.push group
           done()
 
-    it 'should emit if I swipe-out right after swipe-in', (done) ->
-      stitch.on_swipe testId, (err, session, group) ->
-
+    it 'should emit if swipe-out is registered right after swipe-in and include emit to used swipeOut socket id', (done) ->
+      stitch.on_swipe scrts.validSwipeOutForSIOID(scrts.validIOIDsForAGroup[0]),(socketID, data) ->
+        should.exist socketID
+        if scrts.validIOIDsForAGroup[0] == socketID
+          done()
 
   describe '#disaffiliate', =>
     before (done) =>
