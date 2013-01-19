@@ -34,7 +34,7 @@ SwypSchema = new Schema {
 
 Session = mongoose.model 'Sessions', SessionSchema
 Swyp = mongoose.model 'Swyp', SwypSchema
-Display = mongoose.model 'Display', DisplaySchema
+DisplayGroup = mongoose.model 'DisplayGroup', DisplayGroupSchema
 
 mongoose.connect(secrets.mongoDBConnectURLSecret)
 

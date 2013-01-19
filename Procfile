@@ -1,1 +1,1 @@
-web: coffee swyp.coffee
+heb: supervisor swyp.coffee

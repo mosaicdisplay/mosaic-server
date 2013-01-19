@@ -8,6 +8,8 @@
   "dependencies": {
     "coffee-script": "1.2.0",
     "zappa": "0.3.3",
+    "supervisor": "0.5.x",
+    "should": "1.2.x",
     "mongoose": "2.5.10",
     "mongoose-auth": "0.0.12",
     "express": "2.5.8"
