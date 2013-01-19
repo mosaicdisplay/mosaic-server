@@ -57,13 +57,13 @@ SwypSchema = new Schema({
 });
 
 Session = mongoose.model('Sessions', SessionSchema);
-exports.Session = Session
+exports.Session = Session;
 
 Swyp = mongoose.model('Swyp', SwypSchema);
-exports.Swyp = Swyp
+exports.Swyp = Swyp;
 
 DisplayGroup = mongoose.model('Display', DisplaySchema);
-exports.DisplayGroup = DisplayGroup
+exports.DisplayGroup = DisplayGroup;
 
 mongoose.connect(secrets.mongoDBConnectURLSecret);
 
@@ -72,7 +72,6 @@ exports.initializeConnection = function(socketID, callback) {
     callback('no socketid included');
   }
 };
-var delta = new Date(1000); //stackoverflow says this is ms
 
 exports.on_connection = function(socketID){
 	var group = new DisplayGroup();
@@ -85,14 +84,14 @@ exports.on_connection = function(socketID){
 }
 exports.on_disconnection = function(socketID, emitter) {
 	Session.find({sessionID:socketID}, function (session){
-      DisplayGroup.find({_id : makeObjectID(session.displayGroupID)}, function(displayGroup){
+      DisplayGroup.findOne({_id : makeObjectID(session.displayGroupID)}, function(err, displayGroup){
         update_all(displayGroup, emitter);
       });
     session.delete();
   });
 }
 exports.disaffiliate = function(socketID, emitter) {
-	Session.find({sessionID:socketID}, function (session){
+	Session.findOne({sessionID:socketID}, function (err, session){
     var group = new DisplayGroup();
     group.boundarySize={"width":session.physicalSize.width, "height":session.physicalSize.height};
     group.save();
@@ -102,21 +101,54 @@ exports.disaffiliate = function(socketID, emitter) {
     update_all(group, emitter);
   });
 }
-exports.on_swipe = function(swipe, emitter){
-	var session = {};
-	var group = {};
-	Session.find({sessionID:swipe.sessionID}, 
-	function (session){
-		DisplayGroup.find({_id : session.displayGroupID}, 
-			function(group){
-				if(swipe.direction=='out'){
-					Swyp.new(swipe); //I just want to create a row in the database as though it were void
-				}
+exports.on_swipe = function(swipe, emitter) {
+	Session.findOne({sessionID: swipe.sessionID}, function(err, session) {
+
+    session.physicalSize = swipe.screenSize;
+    session.save(function(err, session) {
+
+      DisplayGroup.findOne({_id : makeObjectID(session.displayGroupID)}, function(err, group) {
+        var swyp = new Swyp({
+          dateCreated: Date.now(), 
+          swypPoint: swipe.swypPoint, 
+          direction: swipe.direction
+        }); // i'm high as a kite right now....
+        // todo: save this swyp
+
+        Swyp.find({
+          "dateCreated": {"$gte": swyp.dateCreated - new Date(1000)}, 
+          'direction': (swyp.direction == 'in' ? 'out' : 'in')
+        }, function(err, swyps) {
+          swyp.save();
+
+          if(swyps.length == 0)
+            return; // no matching swyp
+
+          var swypIn, swypOut;
+          if(swyps[0].direction == 'in')
+            swypIn = swyps[0], swypOut = swyp;
+          else
+            swypIn = swyp, swypOut = swyps[0];
+
+
+
+        }).limit(1);
+
+    });
+
+
+    //     if(swipe.direction=='out'){
+				// 	Swyp.new({
+    //         dateCreated: Date.now(), 
+    //         swypPoint: swipe.swypPoint, 
+    //         direction: swipe.direction
+    //       }); // i'm high as a kite right now....
+				// }
 				else{
 					Swyp.new(swipe); //same as above
-					var swipes = connectingSwipe(swipe)
+					var swipes = connectingSwipe(swipe);
 					var lastSwipeSession = {};
-					Session.find({_id: swipes[0].sessionID}, 
+					Session.find({'sessionID': swyp2.sessionID}, 
 						function(lastSwipeSession){
 							var swipeCoord = {};
 							if(swipes==false){
@@ -143,7 +175,7 @@ exports.on_swipe = function(swipe, emitter){
 }
 
 function update_all(DisplayGroup, emitter){
-	Session.find({"displayGroupID": DisplayGroup._id.toString()}, function(sessions){
+	Session.find({"displayGroupID": DisplayGroup._id.toString()}, function(err, sessions) {
     for (var i = 0; i < sessions.length; i++) {
       var socketID = sessions[i].sessionID;
       var data = {
@@ -151,7 +183,7 @@ function update_all(DisplayGroup, emitter){
         'boundarySize': DisplayGroup.boundarySize,
         'screenSize': sessions[i].physicalSize,
         'origin': sessions[i].origin
-      }
+      };
       emitter(socketID, data);
     }
   });
@@ -159,15 +191,13 @@ function update_all(DisplayGroup, emitter){
 
 function connectingSwipe(swipe){
 	var end = swipe.dateCreated;
-	var start = end-delta;
-	var swipes = {};
-	Swyp.find({"dateCreated": {"$gte": start, "$lt": end}}, function(swipes){
-    if(swipes.length==2){
-      //var swipeCoord = {"x":((swipes[0].swypPoint.x+swipes[1].swypPoint.x)/2), "y":((swipes[0].swypPoint.y+swipes[1].swypPoint.y)/2)};
-      return swipes;
-    }
-    else{
-      return false;
-    }
-  }).limit(2);
+	var start = end-(new Date(1000));
+	Swyp.find({"dateCreated": {"$gte": start, "$lt": end}}, function(results){swipes = result }).limit(2);
+	if(swipes.length==2){
+		//var swipeCoord = {"x":((swipes[0].swypPoint.x+swipes[1].swypPoint.x)/2), "y":((swipes[0].swypPoint.y+swipes[1].swypPoint.y)/2)};
+		return swipes;
+	}
+	else{
+		return false;
+	}
 }

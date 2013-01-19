@@ -89,7 +89,14 @@ describe 'stitch', =>
       stitch.on_swipe scrts.validSwipeInForSIOID(scrts.validIOIDsForAGroup[0]),(socketID, data) ->
         if socketID? == false
           done()
-
+ 
+    it 'should emit if swipe-out is registered right after swipe-in and include emit to used swipeOut socket id', (done) ->
+      stitch.on_swipe scrts.validSwipeOutForSIOID(scrts.validIOIDsForAGroup[1]),(socketID, data) ->
+        console.log "emitting data to socket: #{socketID}, data: #{data}"
+        should.exist socketID
+        if scrts.validIOIDsForAGroup[0] == socketID
+          done()
+   
     it 'should emit at least 3 times if swipe-out is registered then swipe-in between devices 1 and 2', (done) ->
       before (done) =>
         stitch.on_swipe scrts.validSwipeInForSIOID(scrts.validIOIDsForAGroup[1]),(socketID, data) ->
@@ -100,14 +107,21 @@ describe 'stitch', =>
         emitCount = emitCount + 1
         if emitCount == 3
           done()
-
-    it 'should emit if swipe-out is registered right after swipe-in and include emit to used swipeOut socket id', (done) ->
-      stitch.on_swipe scrts.validSwipeOutForSIOID(scrts.validIOIDsForAGroup[1]),(socketID, data) ->
+  
+    it 'should deafiliate (have different displayGroupIDs), and emit three times if swipe out occurs from device 2 to device 1', (done) ->
+      before (done) =>
+        stitch.on_swipe scrts.validSwipeOutForSIOID(scrts.validIOIDsForAGroup[2]),(socketID, data) ->
+      emitCount = 0
+      stitch.on_swipe scrts.validSwipeInForSIOID(scrts.validIOIDsForAGroup[1]),(socketID, data) ->
         console.log "emitting data to socket: #{socketID}, data: #{data}"
         should.exist socketID
-        if scrts.validIOIDsForAGroup[0] == socketID
-          done()
-
+        emitCount = emitCount + 1
+        if emitCount == 3
+          stitch.Session.findOne {sessionID:scrts.validIOIDsForAGroup[1]}, (err, obj) =>
+            sessionOneGID = obj?.displayGroupID
+            stitch.Session.findOne {sessionID:scrts.validIOIDsForAGroup[2]}, (err, obj) =>
+              sessionOneGID.should.not.eql obj?.displayGroupID
+              done()
 
 
   describe '#disaffiliate', =>
