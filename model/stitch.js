@@ -101,8 +101,9 @@ exports.disaffiliate = function(socketID, emitter) {
     update_all(group, emitter);
   });
 }
-exports.on_swipe = function(swipe, emitter) {
-	Session.findOne({sessionID: swipe.sessionID}, function(err, session) {
+
+exports.on_swipe = function(sessionID, swipe, emitter) {
+	Session.findOne({sessionID: sessionID}, function(err, session) {
 
     session.physicalSize = swipe.screenSize;
     session.save(function(err, session) {
@@ -111,15 +112,16 @@ exports.on_swipe = function(swipe, emitter) {
         var swyp = new Swyp({
           dateCreated: Date.now(), 
           swypPoint: swipe.swypPoint, 
-          direction: swipe.direction
-        }); // i'm high as a kite right now....
-        // todo: save this swyp
+          direction: swipe.direction,
+          sessionID: sessionID
+        }); 
+        swyp.save();
+        // note that the swyp hasn't been saved yet... see a few lines below.
 
         Swyp.find({
           "dateCreated": {"$gte": swyp.dateCreated - new Date(1000)}, 
           'direction': (swyp.direction == 'in' ? 'out' : 'in')
         }, function(err, swyps) {
-          swyp.save();
 
           if(swyps.length == 0)
             return; // no matching swyp
@@ -130,7 +132,16 @@ exports.on_swipe = function(swipe, emitter) {
           else
             swypIn = swyp, swypOut = swyps[0];
 
+          Session.findOne({'sessionID': swypOut.sessionID}, function(err, outSession) {
+            Session.findOne({'sessionID': swypIn.sessionID}, function(err, inSession) {
+              if(outSession.displayGroupID == inSession.displayGroupID) {
+                exports.disaffiliate(outSession.sessionID, emitter);
+              } else {
+                inSession.displayGroupID = outSession.displayGroupID;
 
+              }
+            });
+          });
 
         }).limit(1);
 
