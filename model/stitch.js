@@ -80,7 +80,7 @@ exports.on_connection = function(socketID){
 }
 exports.on_disconnection = function(socketID){
 	Session.find({sessionID:socketID}, function (session){
-    session.delete;
+    session.delete();
   });
 }
 exports.disaffiliate = function(socketID){
