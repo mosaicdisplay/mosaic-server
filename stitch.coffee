@@ -14,7 +14,7 @@ ObjectId = mongoose.SchemaTypes.ObjectId
 
 zappa = require('zappa')
 
-swypApp = zappa.app ->
+stitchApp = zappa.app ->
   @use 'bodyParser', 'static', 'cookies', 'cookieParser', session: {secret: secrets.sessionSecret}
   #@use  mongooseAuth.middleware()
   #mongooseAuth.helpExpress @app
@@ -249,5 +249,5 @@ swypApp = zappa.app ->
     )
 
 port = if process.env.PORT > 0 then process.env.PORT else 3000
-swypApp.app.listen port
+stitchApp.app.listen port
 console.log "starting on port # #{port}"
