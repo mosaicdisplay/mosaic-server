@@ -1,7 +1,8 @@
-primaryHost = "https://swypserver.herokuapp.com"
-#if process.env.NODE_ENV? == false || process.env.NODE_ENV != "PRODUCTION"
-#primaryHost = "http://127.0.0.1:3000"
+primaryHost = "https://stitch-server.herokuapp.com"
 secrets = require ('./secrets')
+
+shorturl = require('./routes/shorturl')
+home = require('./routes/home')
 
 mongoose     = require('mongoose')
 mongooseAuth = require('mongoose-auth')
@@ -9,62 +10,29 @@ Schema = mongoose.Schema
 
 ObjectId = mongoose.SchemaTypes.ObjectId
 
-#sessions are contained within accounts, and represent an active connection to the swypServer
-#sessions contain the socket.io socket id via 'socketID', and the current location of the user
 SessionSchema = new Schema {
-  token : String,
-  socketID : String,
-  expiration : Date,
-  location : [ Number, Number] #long,lat as suggested: http://www.mongodb.org/display/DOCS/Geospatial+Indexing 
+  sessionID : { type: String, required: true, index: { unique: true }}
+  displayGroupID: {type: String, required: true, index: {unique: false}}
+  physicalSize: {width: Number, height: Number}
+  origin: {x:Number, y:Number}
 }
 
-#the account schema contains the user information and login credentials
-#the userIDs are unique, and can be universal identifiers (more internal than userName)
-#the userName is the display name for other users to see
-#the account document contains the session embeddedDocument 
-Account = null
-AccountSchema = new Schema {
-  userImageURL : String,
-  userID : { type: String, required: true, index: { unique: true }},
-  userName : { type: String, required: true},
-  userPass : String
-  sessions : [SessionSchema]
+
+DisplayGroupSchema = new Schema {
+  boundarySize: {width: Number, height: Number}
+  contentURL: String
+  contentSize: {width: Number, height: Number}
 }
 
-'''
-AccountSchema.plugin mongooseAuth, {
-  everymodule: {everyauth: User: -> Account}
-  facebook:
-    everyauth:
-      myHostname: primaryHost
-      appId: secrets.fb.id
-      appSecret: secrets.fb.secret
-      redirectPath: '/'
-}
-'''
 
-#each contentType the swyp-out supports generates one of these
-#typeGroups are fufilled as necessary to honor requests through swyp-ins
-TypeGroupSchema = new Schema {
-  contentURL : String
-  contentMIME : String
-  requestingUserIDs : [String]
-  uploadTimeoutDate : Date
-  uploadCompletionDate : Date
-}
-
-# each swyp-out generates one of these
-# it contains typeGroups, which are the various contentTypes supported by a specific swyped-out content
-# swypSenderID corresponds to a unique Account.userID
 SwypSchema = new Schema {
-  swypSenderID : String,
-  swypRecipientID : String,
-  dateCreated : Date,
-  dateExpires : Date,
-  previewImagePNGBase64 : String
-  previewImageURL : String
-  typeGroups : [TypeGroup]
+  sessionID : String
+  dateCreated : Date
+  physicalSize: {width: Number, height: Number}
+  swypPoint: {x:Number, y:Number} #from bottom left
+  direction: String #"in" or "out"
 }
+
 
 Account = mongoose.model 'Account', AccountSchema
 Session = mongoose.model 'Account.sessions', SessionSchema
