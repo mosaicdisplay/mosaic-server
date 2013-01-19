@@ -106,11 +106,9 @@ exports.disaffiliate = function(socketID, emitter) {
   });
 }
 exports.on_swipe = function(swipe, emitter){
-	var session = {};
-	var group = {};
 	Session.find({sessionID:swipe.sessionID}, 
 	function (session){
-		DisplayGroup.find({_id : session.displayGroupID}, 
+		DisplayGroup.find({_id : makeObjectID(session.displayGroupID)}, 
 			function(group){
 				if(swipe.direction=='out'){
 					Swyp.new(swipe); //I just want to create a row in the database as though it were void
