@@ -75,25 +75,34 @@ exports.on_connection = function(socketID){
 	var session = new Session();
 	session.displayGroupID = group._id.toString();
 	session.sessionID=socketID;
+	group.save();
+	session.save();
 }
-exports.on_disconnection = function(sesh){
-	Session.find({sessionID:sesh.sessionID}).delete;
+exports.on_disconnection = function(socketID){
+	Session.find({sessionID:socketID}, function (session){session.delete});
 }
-exports.disaffiliate = function(sesh){
+exports.disaffiliate = function(socketID){
 	var group = new DisplayGroup();
-	group.boundarySize={"width":sesh.physicalSize.width, "height":sesh.physicalSize.height};
-	sesh.origin={"x":0,"y":0};
+	var session = {};
+	Session.find({sessionID:socketID}, function (sesh){session = sesh});
+	group.boundarySize={"width":session.physicalSize.width, "height":session.physicalSize.height};
+	session.origin={"x":0,"y":0};
+	group.save();
+	session.save();
 }
 exports.on_swipe = function(swipe){
-	var session= Session.find({_id : swipe.sessionID});
-	var group= DisplayGroup.find({_id : session.displayGroupID});
+	var session = {};
+	var group = {};
+	Session.find({sessionID:swipe.sessionID}, function (sesh){session = sesh});
+	DisplayGroup.find({_id : session.displayGroupID}, function(dg){group=dg});
 	if(swipe.direction=='out'){
 		Swyp.new(swipe); //I just want to create a row in the database as though it were void
 	}
 	else{
 		Swyp.new(swipe); //same as above
 		var swipes = connectingSwipe(swipe)
-		var lastSwipeSession = Session.find({_id: swipes[0].sessionID});
+		var lastSwipeSession = {};
+		Session.find{(_id: swipes[0].sessionID), function(sesh){lastSwipeSession = sesh}};
 		var swipeCoord = {};
 		if(swipes==false){
 			return "no corresponding out-swipe within delta time";
@@ -117,7 +126,8 @@ exports.on_swipe = function(swipe){
 function connectingSwipe(swipe){
 	var end = swipe.dateCreated;
 	var start = end-delta;
-	var swipes=Swyp.find({"dateCreated": {"$gte": start, "$lt": end}}).limit(2);
+	var swipes = {};
+	Swyp.find({"dateCreated": {"$gte": start, "$lt": end}}, function(result){swipes = result }).limit(2);
 	if(swipes.length==2){
 		//var swipeCoord = {"x":((swipes[0].swypPoint.x+swipes[1].swypPoint.x)/2), "y":((swipes[0].swypPoint.y+swipes[1].swypPoint.y)/2)};
 		return swipes;
