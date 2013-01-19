@@ -82,11 +82,11 @@ exports.on_connection = function(socketID){
 	var session = new Session();
 	session.displayGroupID = group._id.toString();
 	session.sessionID=socketID;
-  group.contentURL = 'http://i.imgur.com/Us4J3C4.jpg';
+  	group.contentURL = 'http://i.imgur.com/Us4J3C4.jpg';
 	group.save();
 	session.save();
 }
-exports.on_disconnection = function(socketID, emitter){
+exports.on_disconnection = function(socketID, emitter) {
 	Session.find({sessionID:socketID}, function (session){
       DisplayGroup.find({_id : makeObjectID(session.displayGroupID)}, function(displayGroup){
         update_all(displayGroup, emitter);
@@ -94,7 +94,7 @@ exports.on_disconnection = function(socketID, emitter){
     session.delete();
   });
 }
-exports.disaffiliate = function(socketID, emitter){
+exports.disaffiliate = function(socketID, emitter) {
 	Session.find({sessionID:socketID}, function (session){
     var group = new DisplayGroup();
     group.boundarySize={"width":session.physicalSize.width, "height":session.physicalSize.height};
@@ -108,50 +108,56 @@ exports.disaffiliate = function(socketID, emitter){
 exports.on_swipe = function(swipe, emitter){
 	var session = {};
 	var group = {};
-	Session.find({sessionID:swipe.sessionID}, function (sesh){session = sesh});
-	DisplayGroup.find({_id : session.displayGroupID}, function(dg){group=dg});
-	if(swipe.direction=='out'){
-		Swyp.new(swipe); //I just want to create a row in the database as though it were void
-	}
-	else{
-		Swyp.new(swipe); //same as above
-		var swipes = connectingSwipe(swipe)
-		var lastSwipeSession = {};
-		Session.find({_id: swipes[0].sessionID}, function(sesh){lastSwipeSession = sesh});
-		var swipeCoord = {};
-		if(swipes==false){
-			return "no corresponding out-swipe within delta time";
-		}
-		else{
-			//absolute coordinates of the swipe location
-			swipeCoord.x=lastSwipeSession.origin.x+swipes[0].swypPoint.x;
-				swipeCoord.y=lastSwipeSession.origin.y+swipes[0].swypPoint.y;
-			//subtract distance from new device's origin to find new device's origin
-			session.origin.x+=swipeCoord.x-swipes[1].swypPoint.x;
-				session.origin.y+=swipeCoord.y-swipes[1].swypPoint.y;
-			//add screen size to device origin to get new boundary size
-			group.boundarySize.width=session.origin.x+session.physicalSize.width;
-				group.boundarySize.width=session.origin.y+session.physicalSize.height;
-			session.save();
-			group.save();
-		}
-	}
-	update_all(group, emitter);
+	Session.find({sessionID:swipe.sessionID}, 
+	function (session){
+		DisplayGroup.find({_id : session.displayGroupID}, 
+			function(group){
+				if(swipe.direction=='out'){
+					Swyp.new(swipe); //I just want to create a row in the database as though it were void
+				}
+				else{
+					Swyp.new(swipe); //same as above
+					var swipes = connectingSwipe(swipe)
+					var lastSwipeSession = {};
+					Session.find({_id: swipes[0].sessionID}, 
+						function(lastSwipeSession){
+							var swipeCoord = {};
+							if(swipes==false){
+								return "no corresponding out-swipe within delta time";
+							}
+							else{
+								//absolute coordinates of the swipe location
+								swipeCoord.x=lastSwipeSession.origin.x+swipes[0].swypPoint.x;
+									swipeCoord.y=lastSwipeSession.origin.y+swipes[0].swypPoint.y;
+								//subtract distance from new device's origin to find new device's origin
+								session.origin.x+=swipeCoord.x-swipes[1].swypPoint.x;
+									session.origin.y+=swipeCoord.y-swipes[1].swypPoint.y;
+								//add screen size to device origin to get new boundary size
+								group.boundarySize.width=session.origin.x+session.physicalSize.width;
+									group.boundarySize.width=session.origin.y+session.physicalSize.height;
+								session.save();
+								group.save();
+							}
+						});
+				}
+			update_all(group, emitter);
+		});
+	});
 }
 
 function update_all(DisplayGroup, emitter){
-	var sessions = {};
-	Session.find({"displayGroupID":DisplayGroup._id}, function(result){sessions = result});
-	for (var i = 0; i < sessions.length; i++) {
-    var socketID = sessions[i].sessionID;
-    var data = {
-      'url': DisplayGroup.contentURL,
-      'boundarySize': DisplayGroup.boundarySize,
-      'screenSize': sessions[i].physicalSize,
-      'origin': sessions[i].origin
+	Session.find({"displayGroupID": DisplayGroup._id.toString()}, function(sessions){
+    for (var i = 0; i < sessions.length; i++) {
+      var socketID = sessions[i].sessionID;
+      var data = {
+        'url': DisplayGroup.contentURL,
+        'boundarySize': DisplayGroup.boundarySize,
+        'screenSize': sessions[i].physicalSize,
+        'origin': sessions[i].origin
+      }
+      emitter(socketID, data);
     }
-		emitter(socketID, data);
-	}
+  });
 }
 
 function connectingSwipe(swipe){
