@@ -86,7 +86,7 @@ exports.on_connection = function(socketID){
 	group.save();
 	session.save();
 }
-exports.on_disconnection = function(socketID, emitter){
+exports.on_disconnection = function(socketID, emitter) {
 	Session.find({sessionID:socketID}, function (session){
       DisplayGroup.find({_id : makeObjectID(session.displayGroupID)}, function(displayGroup){
         update_all(displayGroup, emitter);
@@ -94,7 +94,7 @@ exports.on_disconnection = function(socketID, emitter){
     session.delete();
   });
 }
-exports.disaffiliate = function(socketID, emitter){
+exports.disaffiliate = function(socketID, emitter) {
 	Session.find({sessionID:socketID}, function (session){
     var group = new DisplayGroup();
     group.boundarySize={"width":session.physicalSize.width, "height":session.physicalSize.height};
@@ -146,18 +146,18 @@ exports.on_swipe = function(swipe, emitter){
 }
 
 function update_all(DisplayGroup, emitter){
-	var sessions = {};
-	Session.find({"displayGroupID":DisplayGroup._id}, function(result){sessions = result});
-	for (var i = 0; i < sessions.length; i++) {
-    var socketID = sessions[i].sessionID;
-    var data = {
-      'url': DisplayGroup.contentURL,
-      'boundarySize': DisplayGroup.boundarySize,
-      'screenSize': sessions[i].physicalSize,
-      'origin': sessions[i].origin
+	Session.find({"displayGroupID": DisplayGroup._id.toString()}, function(sessions){
+    for (var i = 0; i < sessions.length; i++) {
+      var socketID = sessions[i].sessionID;
+      var data = {
+        'url': DisplayGroup.contentURL,
+        'boundarySize': DisplayGroup.boundarySize,
+        'screenSize': sessions[i].physicalSize,
+        'origin': sessions[i].origin
+      }
+      emitter(socketID, data);
     }
-		emitter(socketID, data);
-	}
+  });
 }
 
 function connectingSwipe(swipe){
