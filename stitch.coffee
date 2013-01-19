@@ -1,0 +1,103 @@
+primaryHost = "https://stitch-server.herokuapp.com"
+secrets = require ('./secrets')
+
+shorturl = require('./routes/shorturl')
+home = require('./routes/home')
+
+stitch = require('./model/stitch.coffee')
+
+mongoose = require('mongoose')
+Schema = mongoose.Schema
+ObjectId = mongoose.SchemaTypes.ObjectId
+
+`Array.prototype.unique = function() {    var o = {}, i, l = this.length, r = [];    for(i=0; i<l;i+=1) o[this[i]] = this[i];    for(i in o) r.push(o[i]);    return r;};`
+
+zappa = require('zappa')
+
+sampleURL = "http://upload.wikimedia.org/wikipedia/commons/8/8c/K2%2C_Mount_Godwin_Austen%2C_Chogori%2C_Savage_Mountain.jpg"
+sampleContentSize = {width: 3,008, height: 2000}
+
+stitchApp = zappa.app ->
+  @use 'bodyParser', 'static', 'cookies', 'cookieParser', session: {secret: secrets.sessionSecret}
+  #@use  mongooseAuth.middleware()
+  #mongooseAuth.helpExpress @app
+  
+  crypto = require('crypto')
+  
+  #force longpolling
+  @io.set("transports", ["xhr-polling"])
+  @io.set("polling duration", 10)
+ 
+  @get '*': ->
+    if @request.headers['host'] == '127.0.0.1:3000'
+      @next()
+    else if @request.headers['x-forwarded-proto']!='https'
+      @redirect "#{primaryHost}#{@request.url}"
+    else
+      @next()
+
+  @get '/', home.home
+
+  socketForSession = (session) =>
+    return socketForSocketID(session?.socketID)
+  
+  socketForSocketID = (socketID) =>
+    if @io.sockets.sockets[socketID]?
+      return @io.sockets.sockets[socketID]
+    else
+      return null
+  
+  #returns whether a given session is active
+  sessionIsActive = (session) =>
+    if (socketForSession(session)?)
+      return true
+    else
+      #console.log "not active #{socketForSession(session)}"
+      return false
+
+  swypForID = (id, callback) => #{callback(err, swypObj)}
+    if id? == false
+       callback "noID", null
+       return
+    try
+      objID = mongoose.mongo.BSONPure.ObjectID.fromString(id)
+    catch err
+      console.log "objID err: #{err} from id #{id}"
+    Swyp.findOne {_id: objID}, (err, obj) =>
+      if err? or (obj? == false)
+         console.log "no swyp for id #{id} found, w. err #{err}"
+         callback err, null
+         return
+      if obj?
+        callback null, obj
+  
+
+  #client2server
+  @on connection: ->
+    console.log "connected id#{@id}"
+    #create session
+    #create display group
+    #adding new session, and creating new displayGroup
+  
+  @on disconnect: ->
+    console.log "disconnected id#{@id}"
+    #delete session
+
+  @on swypOccured: ->
+    console.log "swyp occured with id #{@id}, data: #{@data}"
+    setTimeout ( =>
+      console.log "emitting sample to id #{@id}"
+      emitSampleToSocketID(@id)), 1000
+
+  @on disaffiliate: ->
+    console.log "disafiliate called with id #{@id}"
+
+  emitSampleToSocketID = (socketID, callback) =>
+    socketForSocketID(socketID).emit updateDisplay: {url: sampleURL, boundarySize: {width: 1500, height: 997}, origin: {x:320, y:200}}
+
+  @client '/swyp.js': ->
+    @connect()
+ 
+port = if process.env.PORT > 0 then process.env.PORT else 3000
+stitchApp.app.listen port
+console.log "starting on port # #{port}"

@@ -1,1 +1,1 @@
-web: coffee swyp.coffee
+web: supervisor stitch.coffee
