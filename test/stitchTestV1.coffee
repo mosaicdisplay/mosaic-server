@@ -49,50 +49,83 @@ describe 'stitch', =>
         generatedObjects.push session
         generatedObjects.push group
         done()
-    it 'should permit session to be immediately findable', (done) ->
+    it 'should permit session to be findable after 200ms', (done) ->
       stitch.on_connection scrts.validIOIDs[3], (err, session, group) ->
         generatedObjects.push session
         generatedObjects.push group
-        Session.findOne {sessionID:scrts.validIOIDs[3]}, (err, obj) =>
-          should.exist obj
-          done()
-    it 'should permit displaygroup to be immediately findable', (done) ->
+        setTimeout ( =>
+          stitch.Session.findOne {sessionID:scrts.validIOIDs[3]}, (err, obj) =>
+            should.exist obj
+            done()), 200
+    it 'should permit displaygroup to be findable after 200ms', (done) ->
       stitch.on_connection scrts.validIOIDs[3], (err, session, group) ->
         generatedObjects.push session
         generatedObjects.push group
-        DisplayGroup.findOne {_id: group._id }, (err, obj) =>
-          should.exist obj
-          done()
-
-
-
+        setTimeout ( =>
+          stitch.DisplayGroup.findOne {_id: group._id }, (err, obj) =>
+            should.exist obj
+            done()), 200
    
-   describe '#on_disconnection', =>
+  describe '#on_disconnection', =>
     before (done) =>
       stitch.on_connection scrts.validIOIDDestroyTest, (err, session, group) ->
         should.exist session, 'session should exist after setup'
         done()
     
-    it 'should destroy the session at the sessionID', (done) ->
-       stitch.on_disconnection scrts.validIOIDDestroyTest, (err) =>
-          should.not.exist err
-          Session.findOne {sessionID: scrts.validIOIDDestroyTest}, (err, obj) =>
-            done()
+    it 'should update others in group from the sessionID', (done) ->
+      stitch.on_disconnection scrts.validIOIDDestroyTest, (socketID, data) =>
+        socketID.should.not.eql socketID
+  
+  describe '#on_swipe', =>
+    before (done) =>
+      for testId in scrts.validIOIDsForAGroup
+        stitch.on_connection testId, (err, session, group) ->
+          should.exist session, 'session should exist after setup'
+          generatedObjects.push session
+          generatedObjects.push group
+          done()
+    
+    it 'shouldnt emit anything on first swipe-in if no swipe-out occured, but should do callback with null params', (done) ->
+      stitch.on_swipe scrts.validSwipeInForSIOID(scrts.validIOIDsForAGroup[0]),(socketID, data) ->
+        if socketID? == false
+          done()
+
+    it 'should emit at least 3 times if swipe-out is registered then swipe-in between devices 1 and 2', (done) ->
+      before (done) =>
+        stitch.on_swipe scrts.validSwipeInForSIOID(scrts.validIOIDsForAGroup[1]),(socketID, data) ->
+      emitCount = 0
+      stitch.on_swipe scrts.validSwipeOutForSIOID(scrts.validIOIDsForAGroup[2]),(socketID, data) ->
+        console.log "emitting data to socket: #{socketID}, data: #{data}"
+        should.exist socketID
+        emitCount = emitCount + 1
+        if emitCount == 3
+          done()
+
+    it 'should emit if swipe-out is registered right after swipe-in and include emit to used swipeOut socket id', (done) ->
+      stitch.on_swipe scrts.validSwipeOutForSIOID(scrts.validIOIDsForAGroup[1]),(socketID, data) ->
+        console.log "emitting data to socket: #{socketID}, data: #{data}"
+        should.exist socketID
+        if scrts.validIOIDsForAGroup[0] == socketID
+          done()
 
 
-###
-    it 'should shorten unique (not in db) urls with unique short code', (done) ->
-      stitch.shorten scrts.validTestRedirectURI, scrts.codeLength, null, false, null, null, (err, shortURL) =>
-        generatedShortened.push shortURL
-        should.not.exist err
-        shortURL.redirectURI.should.eql scrts.validTestRedirectURI
-        should.exist shortURL.shortURICode
-        done()
 
-  describe '#retrieve', =>
-    it 'should properly reset last access date after retreiving', (done) ->
-      stitch.retrieve scrts.validCodeRedirectPairs[0][0], scrts.validUserInfo, (err, shortURL) =>
-        should.not.exist err
-        Math.abs((shortURL.modifiedDate.getTime()- new Date().getTime())).should.be.below(1000)
-        done()
-###
+  describe '#disaffiliate', =>
+    before (done) =>
+      stitch.on_connection scrts.validIODisaffiliateID, (err, session, group) ->
+        should.exist session, 'session should exist after setup'
+        generatedObjects.push session
+        generatedObjects.push group
+          
+
+    it 'if group isnt shared, should emit to affectedgroup same sessionID, amongst others or alone', (done) ->
+      stitch.disaffiliate scrts.validIODisaffiliateID, (socketID, data) =>
+        if socketID == scrts.validIODisaffiliateID
+          done()
+
+    it 'if group is, should emit to affectedgroup same sessionID, amongst others or alone', (done) ->
+      stitch.disaffiliate scrts.validIODisaffiliateID, (socketID, data) =>
+        if socketID == scrts.validIODisaffiliateID
+          done()
+
+
