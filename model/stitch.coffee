@@ -102,7 +102,7 @@ exports.on_disconnection = (socketID, emitter, callback) -> #emitter(session, so
   Session.findOne {sessionID: socketID}, (err, sessionObj) ->
     exports.disafilliate socketID, emitter, (err) ->
       #race condition with disafiliate's updateDisplayGroupsOfIDs call-- maybe makes sense just to leave hanging...
-      sessionObj.delete (err) ->
+      sessionObj.remove (err) ->
         callback err
 
 #we need to add a new swipe object, then check for partner one
@@ -132,8 +132,8 @@ pairSwyps = (inSwyp, outSwyp, emitter, callback) -> #callback(err)
         callback "missing session of id #{inSwyp.sessionID}"
         return
      
-      inSwyp.delete()
-      outSwyp.delete()
+      inSwyp.remove()
+      outSwyp.remove()
  
       #if the same, we disaffiliate the master -- the inverse
       if masterSession.displayGroupID == receivingSession.displayGroupID
