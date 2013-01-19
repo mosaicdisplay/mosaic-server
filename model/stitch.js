@@ -123,8 +123,17 @@ exports.on_swipe = function(swipe){
 			group.save();
 		}
 	}
-	return {"session":session,"displayGroup":group};
+	update_all(group);
 }
+
+function update_all(DisplayGroup){
+	var sessions = {};
+	Session.find({"displayGroupID":DisplayGroup._id}, function(result){sessions = result});
+	for (var i = 0; i < sessions.length; i++) {
+		update_data(sessions[i].sessionID, {"session":sessions[i], "DisplayGroup":DisplayGroup});
+	}
+}
+
 function connectingSwipe(swipe){
 	var end = swipe.dateCreated;
 	var start = end-delta;
