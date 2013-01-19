@@ -47,7 +47,6 @@ stitchApp = zappa.app ->
     else
       return null
   
-  #returns whether a given session is active
   sessionIsActive = (session) =>
     if (socketForSession(session)?)
       return true
