@@ -4,56 +4,21 @@ secrets = require ('./secrets')
 shorturl = require('./routes/shorturl')
 home = require('./routes/home')
 
-mongoose     = require('mongoose')
-mongooseAuth = require('mongoose-auth')
-Schema = mongoose.Schema
+stitch = require('./model/stitch.coffee')
 
-ObjectId = mongoose.SchemaTypes.ObjectId
-
-SessionSchema = new Schema {
-  sessionID : { type: String, required: true, index: { unique: true }}
-  displayGroupID: {type: String, required: true, index: {unique: false}}
-  physicalSize: {width: Number, height: Number}
-  origin: {x:Number, y:Number}
-}
-
-
-DisplayGroupSchema = new Schema {
-  boundarySize: {width: Number, height: Number}
-  contentURL: String
-  contentSize: {width: Number, height: Number}
-}
-
-
-SwypSchema = new Schema {
-  sessionID : String
-  dateCreated : Date
-  physicalSize: {width: Number, height: Number}
-  swypPoint: {x:Number, y:Number} #from bottom left
-  direction: String #"in" or "out"
-}
-
-
-Account = mongoose.model 'Account', AccountSchema
-Session = mongoose.model 'Account.sessions', SessionSchema
-Swyp = mongoose.model 'Swyp', SwypSchema
-TypeGroup = mongoose.model 'Swyp.typeGroups', TypeGroupSchema
 `Array.prototype.unique = function() {    var o = {}, i, l = this.length, r = [];    for(i=0; i<l;i+=1) o[this[i]] = this[i];    for(i in o) r.push(o[i]);    return r;};`
 
 swypApp = require('zappa').app ->
-  console.log secrets
-  mongoose.connect(secrets.mongoDBConnectURLSecret)
-  #removed , 'app.router' for mongooseAuth
   @use 'bodyParser', 'static', 'cookies', 'cookieParser', session: {secret: secrets.sessionSecret}
   #@use  mongooseAuth.middleware()
   #mongooseAuth.helpExpress @app
   
   crypto = require('crypto')
-
+  
+  #force longpolling
   @io.set("transports", ["xhr-polling"])
   @io.set("polling duration", 10)
  
-
   @get '*': ->
     if @request.headers['host'] == '127.0.0.1:3000'
       @next()
@@ -62,13 +27,6 @@ swypApp = require('zappa').app ->
     else
       @next()
   
-  @include 'swypClient'
-  @include 'swypUI'
-  #process.on 'uncaughtException', (err) =>
-  #  console.log "uncaught exception #{err} not terminating app"
-
-  #this method performs a callback with (error, account, activeSessions) w. the relevant account for a publicUserID, as well as associated active sessions
-  #public user id is the user._id for a user, which does not disclose their external credentials
   accountForPublicUserID = (publicID, callback) -> #callback(error, account, activeSessions)
     try
       objID = mongoose.mongo.BSONPure.ObjectID.fromString(publicID)
