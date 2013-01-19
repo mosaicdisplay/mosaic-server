@@ -4,7 +4,7 @@ secrets = require ('./secrets')
 shorturl = require('./routes/shorturl')
 home = require('./routes/home')
 
-#stitch = require('./model/stitch')
+stitch = require('./model/stitch')
 
 mongoose = require('mongoose')
 Schema = mongoose.Schema
@@ -75,7 +75,7 @@ stitchApp = zappa.app ->
   #client2server
   @on connection: ->
     console.log "connected id#{@id}"
-    #stitch.on_connection @id
+    stitch.on_connection @id
     #create session
     #create display group
     #adding new session, and creating new displayGroup
