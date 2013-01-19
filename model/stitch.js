@@ -94,13 +94,15 @@ exports.on_disconnection = function(socketID, emitter){
     session.delete();
   });
 }
-exports.disaffiliate = function(socketID){
+exports.disaffiliate = function(socketID, emitter){
 	Session.find({sessionID:socketID}, function (session){
     var group = new DisplayGroup();
     group.boundarySize={"width":session.physicalSize.width, "height":session.physicalSize.height};
     group.save();
+    session.displayGroupID = group._id.toString();
     session.origin={"x":0,"y":0};
     session.save();
+    update_all(group, emitter);
   });
 }
 exports.on_swipe = function(swipe, emitter){
