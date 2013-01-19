@@ -92,7 +92,7 @@ exports.disaffiliate = function(socketID){
 	group.save();
 	session.save();
 }
-exports.on_swipe = function(swipe){
+exports.on_swipe = function(swipe, emitter){
 	var session = {};
 	var group = {};
 	Session.find({sessionID:swipe.sessionID}, function (sesh){session = sesh});
@@ -123,14 +123,21 @@ exports.on_swipe = function(swipe){
 			group.save();
 		}
 	}
-	update_all(group);
+	update_all(group, emitter);
 }
 
-function update_all(DisplayGroup){
+function update_all(DisplayGroup, emitter){
 	var sessions = {};
 	Session.find({"displayGroupID":DisplayGroup._id}, function(result){sessions = result});
 	for (var i = 0; i < sessions.length; i++) {
-		update_data(sessions[i].sessionID, {"session":sessions[i], "DisplayGroup":DisplayGroup});
+    var socketID = sessions[i].sessionID;
+    var data = {
+      'url': DisplayGroup.contentURL,
+      'boundarySize': DisplayGroup.boundarySize,
+      'screenSize': sessions[i].physicalSize,
+      'origin': sessions[i].origin
+    }
+		emitter(socketID, data);
 	}
 }
 

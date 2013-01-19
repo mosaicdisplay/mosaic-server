@@ -86,18 +86,20 @@ stitchApp = zappa.app ->
     #delete session
 
   @on swypOccurred: ->
-    stitch.on_swipe @data
+    stitch.on_swipe @data, (socketID, data) ->
+      socketForSocketID(socketID).emit {updateDisplay: data}
+
     console.log "swyp occurred with id #{@id}, data: #{@data}"
-    setTimeout ( =>
-      console.log "emitting sample to id #{@id}"
-      emitSampleToSocketID(@id)), 1000
+    # setTimeout ( =>
+    #   console.log "emitting sample to id #{@id}"
+    #   emitSampleToSocketID(@id)), 1000
 
   @on disaffiliate: ->
     stitch.disaffiliate @id
     console.log "disafiliate called with id #{@id}"
 
-  emitSampleToSocketID = (socketID, callback) =>
-    socketForSocketID(socketID).emit updateDisplay: {url: sampleURL, boundarySize: {width: 1500, height: 997}, screenSize: {width: 320, height: 548}, origin: {x:320, y:200}}
+  # emitSampleToSocketID = (socketID, callback) =>
+  #   socketForSocketID(socketID).emit updateDisplay: {url: sampleURL, boundarySize: {width: 1500, height: 997}, screenSize: {width: 320, height: 548}, origin: {x:320, y:200}}
 
   @client '/swyp.js': ->
     @connect()
