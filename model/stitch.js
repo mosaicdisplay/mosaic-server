@@ -86,19 +86,22 @@ exports.on_connection = function(socketID){
 	group.save();
 	session.save();
 }
-exports.on_disconnection = function(socketID){
+exports.on_disconnection = function(socketID, emitter){
 	Session.find({sessionID:socketID}, function (session){
+      DisplayGroup.find({_id : makeObjectID(session.displayGroupID)}, function(displayGroup){
+        update_all(displayGroup, emitter);
+      });
     session.delete();
   });
 }
 exports.disaffiliate = function(socketID){
-	var group = new DisplayGroup();
-	var session = {};
-	Session.find({sessionID:socketID}, function (sesh){session = sesh});
-	group.boundarySize={"width":session.physicalSize.width, "height":session.physicalSize.height};
-	session.origin={"x":0,"y":0};
-	group.save();
-	session.save();
+	Session.find({sessionID:socketID}, function (session){
+    var group = new DisplayGroup();
+    group.boundarySize={"width":session.physicalSize.width, "height":session.physicalSize.height};
+    group.save();
+    session.origin={"x":0,"y":0};
+    session.save();
+  });
 }
 exports.on_swipe = function(swipe, emitter){
 	var session = {};
