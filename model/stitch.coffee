@@ -182,9 +182,11 @@ pairSwyps = (inSwyp, outSwyp, emitter, callback) -> #callback(err)
       if receivingSession? == false
         callback "missing session of id #{inSwyp.sessionID}"
         return
-     
+
+      # update: we're axing the reverse-swipe-to-disaffiliate feature because it's not impressive and gets in the way of the demo. --ishaan 
       #if the same, we disaffiliate the master -- the inverse
-      if masterSession.displayGroupID == receivingSession.displayGroupID
+      # if masterSession.displayGroupID == receivingSession.displayGroupID
+      if false
         console.log "disaffiliating #{masterSession.sessionID} and #{receivingSession.sessionID}"
         exports.disafilliate masterSession.sessionID, emitter, callback
       else #if different, we inherit the master's session
