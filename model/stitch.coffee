@@ -183,8 +183,14 @@ pairSwyps = (inSwyp, outSwyp, emitter, callback) -> #callback(err)
         receivingSession.displayGroupID = masterSession.displayGroupID
 
 
+        console.log 'absoluteSwypX = #{masterSession.origin.x} + #{outSwyp.swypPoint.x}'
+        console.log 'receivingSession.origin.x = #{absoluteSwypX} - #{inSwyp.swypPoint.x}'
+
         absoluteSwypX = masterSession.origin.x + outSwyp.swypPoint.x
         receivingSession.origin.x = absoluteSwypX - inSwyp.swypPoint.x
+
+        console.log 'absoluteSwypY = #{masterSession.origin.y} + #{outSwyp.swypPoint.y}'
+        console.log 'receivingSession.origin.y = #{absoluteSwypY} - #{inSwyp.swypPoint.y}'
 
         absoluteSwypY = masterSession.origin.y + outSwyp.swypPoint.y
         receivingSession.origin.y = absoluteSwypY - inSwyp.swypPoint.y
