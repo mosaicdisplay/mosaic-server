@@ -189,7 +189,7 @@ pairSwyps = (inSwyp, outSwyp, emitter, callback) -> #callback(err)
         absoluteSwypY = masterSession.origin.y + outSwyp.swypPoint.y
         receivingSession.origin.y = absoluteSwypY - inSwyp.swypPoint.y
 
-        console.log "receivingSession origin is #{JSON.stringify recievingSession.origin}"
+        console.log "receivingSession origin is #{JSON.stringify receivingSession.origin}"
 
         receivingSession.save (err) =>
           updateDisplayGroupsOfIDs [masterSession.displayGroupID], emitter, callback
