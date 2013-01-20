@@ -201,4 +201,4 @@ exports.setContent = (socketID, data, emitter, callback) ->
     DisplayGroup.findOne {_id: makeObjectID(sessionObj.displayGroupID)}, (err, group) ->
       group.contentURL = data.contentURL
       group.save (err) ->
-        callback()
+        updateDisplayGroupsOfIDs [group._id.toString()], emitter, callback
