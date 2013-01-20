@@ -1,3 +1,4 @@
+# fancy image is at http://i.imgur.com/Us4J3C4.jpg
 secrets = require("../secrets")
 crypto = require("crypto")
 mongoose = require("mongoose")
@@ -64,7 +65,7 @@ exports.on_connection = (socketID, callback) -> #callback(err, session, group)
   session.sessionID = socketID
   session.origin = {x: 0, y: 0}
   session.physicalSize = {width: 0, height: 0}
-  group.contentURL = "http://i.imgur.com/Us4J3C4.jpg"
+  group.contentURL = "about:blank"
   group.save (err) =>
     session.save (err) =>
       callback err, session, group
@@ -117,7 +118,7 @@ updateDisplayGroupsOfIDs = (displayGroupIDs, emitter, callback) -> #callback (er
 #disconnects and cascades changes
 exports.disafilliate = (socketID, emitter, callback) ->
   Session.findOne {sessionID: socketID}, (err, sessionObj) ->
-    newDG = new DisplayGroup {contentURL: 'http://i.imgur.com/Us4J3C4.jpg'}
+    newDG = new DisplayGroup {contentURL: 'about:blank'}
     oldDisplayGroupID = sessionObj.displayGroupID
     newDisplayGroupID = newDG._id.toString()
     console.log "disafilliateing session with group #{oldDisplayGroupID } to id #{newDisplayGroupID}"
