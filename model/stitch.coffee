@@ -62,8 +62,8 @@ exports.on_connection = (socketID, callback) -> #callback(err, session, group)
   session = new Session()
   session.displayGroupID = group._id.toString()
   session.sessionID = socketID
-  session.origin = {x: 1, y: 2}
-  session.physicalSize = {width: 3, height: 4}
+  session.origin = {x: 0, y: 0}
+  session.physicalSize = {width: 0, height: 0}
   group.contentURL = "http://i.imgur.com/Us4J3C4.jpg"
   group.save (err) =>
     session.save (err) =>
@@ -142,6 +142,11 @@ exports.on_swipe = (socketID, swipeData, emitter, callback) -> #callback (err)
   if swipeData? == false
     callback "no data"
     return
+
+  Session.findOne {sessionID: socketID}, (err, session) ->
+    session.physicalSize = swipeData.screenSize
+    session.save()
+
   swyp = new Swyp {sessionID: socketID, dateCreated: new Date(), swypPoint: swipeData?.swypPoint , screenSize: swipeData?.screenSize, direction: swipeData.direction}
   swyp.save (err) =>
     floorDate = new Date(swyp.dateCreated.valueOf()-1000)
