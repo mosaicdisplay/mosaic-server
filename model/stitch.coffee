@@ -149,7 +149,7 @@ exports.on_swipe = (socketID, swipeData, emitter, callback) -> #callback (err)
 
   swyp = new Swyp {sessionID: socketID, dateCreated: new Date(), swypPoint: swipeData?.swypPoint , screenSize: swipeData?.screenSize, direction: swipeData.direction}
   swyp.save (err) =>
-    floorDate = new Date(swyp.dateCreated.valueOf()-1000)
+    floorDate = new Date(swyp.dateCreated.valueOf()-2500)
     searchDir = if swyp.direction == 'out' then 'in' else 'out'
     Swyp.findOne {dateCreated: {$gt: floorDate}, direction: searchDir}, (err, matchSwyp) ->
       if matchSwyp? == false
