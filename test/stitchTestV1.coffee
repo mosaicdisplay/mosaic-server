@@ -114,7 +114,7 @@ describe 'stitch', =>
         stitch.on_swipe scrts.validIOIDsForAGroup[1], scrts.validSwipeInForSIOID(scrts.validIOIDsForAGroup[1]),(socketID, data) ->
       emitCount = 0
       stitch.on_swipe scrts.validIOIDsForAGroup[2], scrts.validSwipeOutForSIOID(scrts.validIOIDsForAGroup[2]),((socketID, data) ->
-        console.log "emitting data to socket: #{socketID}, data: #{data}"
+        console.log "Z: emitting data to socket: #{socketID}, data: #{data}"
         should.exist socketID
         emitCount = emitCount + 1
         if emitCount == 3

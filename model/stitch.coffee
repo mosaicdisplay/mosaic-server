@@ -85,27 +85,18 @@ updateDisplayGroupsOfIDs = (displayGroupIDs, emitter, callback) -> #callback (er
 
         minX = _.min(_.map(sessions, (session) -> session.origin.x))
         minY = _.min(_.map(sessions, (session) -> session.origin.y))
-        #minY = _.min sessions, (session) -> session.origin.y
 
         for session in sessions
           session.origin.x -= minX
           session.origin.y -= minY
           session.save()
 
-        maxX = _.max sessions, (session) -> session.origin.x + session.physicalSize.width
-        maxY = _.max sessions, (session) -> session.origin.y + session.physicalSize.height
+        maxX = _.max(_.map(sessions, (session) -> session.origin.x + session.physicalSize.width))
+        maxY = _.max(_.map(sessions, (session) -> session.origin.y + session.physicalSize.height))
 
         group.boundarySize.width = maxX
         group.boundarySize.height = maxY
         group.save()
-
-        # .... see? it all makes sense now, right? ... right?
-        save = ->
-          if to_save.length > 0
-            to_save.pop.save -> save()
-          else
-            callback()
-        save
 
         for session in sessions
           emitData = {
@@ -116,7 +107,7 @@ updateDisplayGroupsOfIDs = (displayGroupIDs, emitter, callback) -> #callback (er
           }
           
           console.log "updated id #{session.sessionID} with emit data #{emitData}"
-
+          
           emitter session, emitData
   callback null
 
