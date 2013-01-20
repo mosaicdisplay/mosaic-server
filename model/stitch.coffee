@@ -75,7 +75,13 @@ updateDisplayGroupsOfIDs = (displayGroupIDs, emitter, callback) -> #callback (er
       if group? == false
         callback "no group found for groupID: #{groupID}"
         return
+
+      console.log "printB"
       Session.find {displayGroupID: groupID}, (err, sessions) =>
+        console.log "found #{sessions?.length} to update for groupID #{groupID}"
+        if sessions.length == 0
+          return
+
         minX = _.min sessions, (session) -> session.origin.x
         minY = _.min sessions, (session) -> session.origin.y
 
@@ -101,11 +107,12 @@ updateDisplayGroupsOfIDs = (displayGroupIDs, emitter, callback) -> #callback (er
 
         for session in sessions
           emitData = {
-            url: group.contentURL, 
-            boundarySize: group.boundarySize, 
-            screenSize: session.physicalSize, 
+            url: group.contentURL,
+            boundarySize: group.boundarySize,
+            screenSize: session.physicalSize,
             origin: session.origin
           }
+          
           console.log "updated id #{session.sessionID} with emit data #{emitData}"
 
           emitter session, emitData
