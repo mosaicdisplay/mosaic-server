@@ -77,18 +77,41 @@ updateDisplayGroupsOfIDs = (displayGroupIDs, emitter, callback) -> #callback (er
 
       console.log "printB"
       Session.find {displayGroupID: groupID}, (err, sessions) =>
-        console.log "printC"
         console.log "found #{sessions?.length} to update for groupID #{groupID}"
         if sessions.length == 0
           return
+
+        minX = _.min sessions, (session) -> session.origin.x
+        minY = _.min sessions, (session) -> session.origin.y
+
         for session in sessions
-          console.log "printD"
-          #replace me!
-          boundarySize = {width: sessions.length * 320, height: sessions.length * 548}
-          screenSize = {width: 320, height: 548}
+          session.origin.x -= minX
+          session.origin.y -= minY
+          session.save()
+
+        maxX = _.max sessions, (session) -> session.origin.x + session.physicalSize.width
+        maxY = _.max sessions, (session) -> session.origin.y + session.physicalSize.height
+
+        group.boundarySize.width = maxX
+        group.boundarySize.height = maxY
+        group.save()
+
+        # .... see? it all makes sense now, right? ... right?
+        save = ->
+          if to_save.length > 0
+            to_save.pop.save -> save()
+          else
+            callback()
+        save
+
+        for session in sessions
+          emitData = {
+            url: group.contentURL,
+            boundarySize: group.boundarySize,
+            screenSize: session.physicalSize,
+            origin: session.origin
+          }
           
-          console.log "groupID:#{groupID} fetched group: #{group}"
-          emitData = {url: group.contentURL, boundarySize: boundarySize, screenSize: screenSize, origin: {x: screenSize.width * (sessions.length - 1), y: screenSize.height * (sessions.length - 1)}}
           console.log "updated id #{session.sessionID} with emit data #{emitData}"
 
           emitter session, emitData
