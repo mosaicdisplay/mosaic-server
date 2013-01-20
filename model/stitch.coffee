@@ -74,56 +74,57 @@ exports.on_connection = (socketID, callback) -> #callback(err, session, group)
 updateDisplayGroupsOfIDs = (displayGroupIDs, emitter, callback) -> #callback (err) #emitter(session, socketData)
   #console.log "need to update each of #{displayGroupIDs}"
   for groupID in displayGroupIDs
-    DisplayGroup.findOne {_id: makeObjectID(groupID)}, (err, group) =>
-      if group? == false
-        callback "no group found for groupID: #{groupID}"
-        return
-
-      Session.find {displayGroupID: groupID}, (err, sessions) =>
-        if sessions.length == 0
+    do (groupID) ->
+      DisplayGroup.findOne {_id: makeObjectID(groupID)}, (err, group) =>
+        if group? == false
+          callback "no group found for groupID: #{groupID}"
           return
 
-        minX = _.min(_.map(sessions, (session) -> session.origin.x))
-        minY = _.min(_.map(sessions, (session) -> session.origin.y))
+        Session.find {displayGroupID: groupID}, (err, sessions) =>
+          if sessions.length == 0
+            return
 
-        for session in sessions
-          session.origin.x -= minX
-          session.origin.y -= minY
-          session.save()
+          minX = _.min(_.map(sessions, (session) -> session.origin.x))
+          minY = _.min(_.map(sessions, (session) -> session.origin.y))
 
-        maxX = _.max(_.map(sessions, (session) -> session.origin.x + session.physicalSize.width))
-        maxY = _.max(_.map(sessions, (session) -> session.origin.y + session.physicalSize.height))
+          for session in sessions
+            session.origin.x -= minX
+            session.origin.y -= minY
+            session.save()
 
-        group.boundarySize.width = maxX
-        group.boundarySize.height = maxY
-        group.save()
+          maxX = _.max(_.map(sessions, (session) -> session.origin.x + session.physicalSize.width))
+          maxY = _.max(_.map(sessions, (session) -> session.origin.y + session.physicalSize.height))
 
-        for session in sessions
-          emitData = {
-            url: group.contentURL,
-            boundarySize: group.boundarySize,
-            screenSize: session.physicalSize,
-            origin: session.origin
-          }
-          
-          console.log "updated id #{session.sessionID} with emit data #{emitData}"
-          
-          emitter session, emitData
+          group.boundarySize.width = maxX
+          group.boundarySize.height = maxY
+          group.save()
+
+          for session in sessions
+            emitData = {
+              url: group.contentURL,
+              boundarySize: group.boundarySize,
+              screenSize: session.physicalSize,
+              origin: session.origin
+            }
+            
+            console.log "updated id #{session.sessionID} with emit data #{emitData}"
+            
+            emitter session, emitData
   callback null
 
 #disconnects and cascades changes
 exports.disafilliate = (socketID, emitter, callback) ->
   Session.findOne {sessionID: socketID}, (err, sessionObj) ->
-    newDG = new DisplayGroup {}
+    newDG = new DisplayGroup {contentURL: 'http://i.imgur.com/Us4J3C4.jpg'}
     oldDisplayGroupID = sessionObj.displayGroupID
     newDisplayGroupID = newDG._id.toString()
-    #console.log "disafilliateing session with group #{oldDisplayGroupID } to id #{newDisplayGroupID}"
+    console.log "disafilliateing session with group #{oldDisplayGroupID } to id #{newDisplayGroupID}"
     sessionObj.displayGroupID = newDisplayGroupID
     newDG.save (err) ->
       if err?
         console.log "non-critical group-save err #{err}"
-    sessionObj.save (err) ->
-      updateDisplayGroupsOfIDs [oldDisplayGroupID, newDisplayGroupID], emitter, callback
+      sessionObj.save (err) ->
+        updateDisplayGroupsOfIDs [oldDisplayGroupID, newDisplayGroupID], emitter, callback
       
 
 #now passes session in emitter
@@ -144,7 +145,7 @@ exports.on_swipe = (socketID, swipeData, emitter, callback) -> #callback (err)
   swyp = new Swyp {sessionID: socketID, dateCreated: new Date(), swypPoint: swipeData?.swypPoint , screenSize: swipeData?.screenSize, direction: swipeData.direction}
   swyp.save (err) =>
     floorDate = new Date(swyp.dateCreated.valueOf()-1000)
-    searchDir = (swyp.direction == "out")? "in" : "out"
+    searchDir = if swyp.direction == 'out' then 'in' else 'out'
     Swyp.findOne {dateCreated: {$gt: floorDate}, direction: searchDir}, (err, matchSwyp) ->
       if matchSwyp? == false
         #nothing to do here, wait for pair
@@ -171,8 +172,10 @@ pairSwyps = (inSwyp, outSwyp, emitter, callback) -> #callback(err)
  
       #if the same, we disaffiliate the master -- the inverse
       if masterSession.displayGroupID == receivingSession.displayGroupID
+        console.log "disaffiliating #{masterSession.sessionID} and #{receivingSession.sessionID}"
         exports.disafilliate masterSession.sessionID, emitter, callback
       else #if different, we inherit the master's session
+        console.log "affiliating #{masterSession.sessionID} and #{receivingSession.sessionID}"
         receivingSession.displayGroupID = masterSession.displayGroupID
         receivingSession.save (err) =>
           updateDisplayGroupsOfIDs [masterSession.displayGroupID], emitter, callback

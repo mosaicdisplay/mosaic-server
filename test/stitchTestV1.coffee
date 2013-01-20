@@ -10,6 +10,12 @@ scrts = require("./stitchTestSecrets")
 describe 'stitch', =>
   generatedObjects = []
   
+  deleteEverything = (callback) ->
+    stitch.Swyp.find().remove (err) ->
+      stitch.Session.find().remove (err) ->
+        stitch.DisplayGroup.find().remove (err) ->
+          callback()
+
   errorCallback = (err) ->
     should.not.exist err
 
@@ -87,60 +93,62 @@ describe 'stitch', =>
             console.log "error callback on disconnection #{error}"
   
   describe '#on_swipe', =>
-    before (done) =>
-      for i in [0..scrts.validIOIDsForAGroup.length - 1]
-        do (i) =>
-          testId = scrts.validIOIDsForAGroup[i]
-          stitch.on_connection testId, (err, session, group) =>
-            should.exist session, 'session should exist after setup'
-            generatedObjects.push session
-            generatedObjects.push group
-            if i == scrts.validIOIDsForAGroup.length - 1
-              done()
-    it.skip 'shouldnt emit anything on first swipe-in if no swipe-out occured, but should do callback with null params', (done) ->
-      stitch.on_swipe scrts.validIOIDsForAGroup[0], scrts.validSwipeInForSIOID(scrts.validIOIDsForAGroup[0]),((socketID, data) =>
-        if socketID? == false
-          done()), errorCallback
+    beforeEach (done) =>
+      deleteEverything ->
+        for i in [0..scrts.validIOIDsForAGroup.length - 1]
+          do (i) =>
+            testId = scrts.validIOIDsForAGroup[i]
+            stitch.on_connection testId, (err, session, group) =>
+              should.exist session, 'session should exist after setup'
+              generatedObjects.push session
+              generatedObjects.push group
+              if i == scrts.validIOIDsForAGroup.length - 1
+                done()
+    it 'shouldnt emit anything on first swipe-in if no swipe-out occured, but should do callback with null params', (done) ->
+      stitch.on_swipe scrts.validIOIDsForAGroup[0], scrts.validSwipeInForSIOID(scrts.validIOIDsForAGroup[0]),((session, data) =>
+        assert(false)), (err) ->
+          setTimeout (->
+            done()
+          ), 1000
 
     it 'should emit if swipe-out is registered right after swipe-in and include emit to used swipeOut socket id', (done) ->
-      stitch.on_swipe scrts.validIOIDsForAGroup[1], scrts.validSwipeOutForSIOID(scrts.validIOIDsForAGroup[1]),((socketID, data) ->
-        console.log "emitting data to socket: #{socketID}, data: #{data}"
-        should.exist socketID
-        if scrts.validIOIDsForAGroup[0] == socketID
-          done()), errorCallback
-   
-    it.only 'should emit at least 3 times if swipe-out is registered then swipe-in between devices 1 and 2', (done) ->
-      console.log "A"
-      before (done) =>
-        console.log "B"
-        stitch.on_swipe scrts.validIOIDsForAGroup[1], scrts.validSwipeInForSIOID(scrts.validIOIDsForAGroup[1]),((socketID, data) ->
-        console.log "emitting data from first half of swype (IN)"), (err) ->
-        if err?
-          console.log "C setup test"
-      stitch.on_swipe scrts.validIOIDsForAGroup[2], scrts.validSwipeOutForSIOID(scrts.validIOIDsForAGroup[2]),((socketID, data) ->
-        console.log "Z: emitting data to socket: #{socketID}, data: #{data}"
-        should.exist socketID
-        emitCount = emitCount + 1
-        if emitCount == 3
-          done()), (err) ->
-            console.log "part two ended in callback block"
+      stitch.on_swipe scrts.validIOIDsForAGroup[0], scrts.validSwipeInForSIOID(scrts.validIOIDsForAGroup[0]),((session0, data) =>
+        assert(false)), (err) ->
+          stitch.on_swipe scrts.validIOIDsForAGroup[1], scrts.validSwipeOutForSIOID(scrts.validIOIDsForAGroup[1]),((session1, data) ->
+            console.log "emitting data to socket: #{session1} // should be #{scrts.validIOIDsForAGroup[0]}, data: #{data}"
+            should.exist session1
+            if scrts.validIOIDsForAGroup[1] == session1.sessionID
+              console.log 
+              done()), errorCallback
+     
+    it 'should emit at least 3 times if swipe-out is registered then swipe-in between devices 1 and 2', (done) ->
+      sessionIDs = []
+      stitch.on_swipe scrts.validIOIDsForAGroup[0], scrts.validSwipeOutForSIOID(scrts.validIOIDsForAGroup[0]),((session0, data) =>
+        assert(false)), (err) ->
+          stitch.on_swipe scrts.validIOIDsForAGroup[1], scrts.validSwipeInForSIOID(scrts.validIOIDsForAGroup[1]),((session1, data) ->), (err) ->
+            stitch.on_swipe scrts.validIOIDsForAGroup[1], scrts.validSwipeOutForSIOID(scrts.validIOIDsForAGroup[1]),((session1_2, data) =>
+              assert(false)), (err) ->
+                stitch.on_swipe scrts.validIOIDsForAGroup[2], scrts.validSwipeInForSIOID(scrts.validIOIDsForAGroup[2]),((session, data) ->
+                  sessionIDs.push(session.sessionID)
+                  if(sessionIDs.length == 3)
+                    done()
+                  ), (err) ->
   
     it 'should deafiliate (have different displayGroupIDs), and emit three times if swipe out occurs from device 2 to device 1', (done) ->
-      before (done) =>
-        stitch.on_swipe scrts.validIOIDsForAGroup[2], scrts.validSwipeOutForSIOID(scrts.validIOIDsForAGroup[2]),(socketID, data) ->
-      emitCount = 0
-      stitch.on_swipe scrts.validIOIDsForAGroup[1], scrts.validSwipeInForSIOID(scrts.validIOIDsForAGroup[1]),((socketID, data) ->
-        console.log "w ct: #{emitCount} emitting data to socket: #{socketID}, data: #{data}"
-        should.exist socketID
-        emitCount = emitCount + 1
-        if emitCount == 3
-          stitch.Session.findOne {sessionID:scrts.validIOIDsForAGroup[1]}, (err, obj) =>
-            sessionOneGID = obj?.displayGroupID
-            stitch.Session.findOne {sessionID:scrts.validIOIDsForAGroup[2]}, (err, obj) =>
-              sessionOneGID.should.not.eql obj?.displayGroupID
-              done()), errorCallback
+      sessionIDs = []
+      stitch.on_swipe scrts.validIOIDsForAGroup[0], scrts.validSwipeOutForSIOID(scrts.validIOIDsForAGroup[0]),((session0, data) => assert(false)), (err) ->
+          stitch.on_swipe scrts.validIOIDsForAGroup[1], scrts.validSwipeInForSIOID(scrts.validIOIDsForAGroup[1]),((session1, data) ->), (err) ->
+            stitch.on_swipe scrts.validIOIDsForAGroup[1], scrts.validSwipeOutForSIOID(scrts.validIOIDsForAGroup[1]),((session1_2, data) => assert(false)), (err) ->
+                stitch.on_swipe scrts.validIOIDsForAGroup[2], scrts.validSwipeInForSIOID(scrts.validIOIDsForAGroup[2]),((session, data) ->), (err) ->
+                  stitch.on_swipe scrts.validIOIDsForAGroup[2], scrts.validSwipeOutForSIOID(scrts.validIOIDsForAGroup[2]),((session1_2, data) => assert(false)), (err) ->
+                      stitch.on_swipe scrts.validIOIDsForAGroup[1], scrts.validSwipeInForSIOID(scrts.validIOIDsForAGroup[1]),((session, data) ->
+                        sessionIDs.push(session.sessionID)
+                        console.log 'at this point sessionids is '+ JSON.stringify sessionIDs
+                        if(sessionIDs.length == 3)
+                          done()
+                        ), (err) ->
 
-
+  
   describe '#disaffiliate', =>
     before (done) =>
       stitch.on_connection scrts.validIODisaffiliateID, (err, session, group) ->
