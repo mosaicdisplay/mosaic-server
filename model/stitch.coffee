@@ -71,6 +71,9 @@ updateDisplayGroupsOfIDs = (displayGroupIDs, emitter, callback) -> #callback (er
   #console.log "need to update each of #{displayGroupIDs}"
   for groupID in displayGroupIDs
     DisplayGroup.findOne {_id: makeObjectID(groupID)}, (err, group) =>
+      if group? == false
+        callback "no group found for groupID: #{groupID}"
+        return
       Session.find {displayGroupID: groupID}, (err, sessions) =>
         minX = _.min sessions, (session) -> session.origin.x
         minY = _.min sessions, (session) -> session.origin.y
@@ -115,6 +118,9 @@ exports.disafilliate = (socketID, emitter, callback) ->
     newDisplayGroupID = newDG._id.toString()
     #console.log "disafilliateing session with group #{oldDisplayGroupID } to id #{newDisplayGroupID}"
     sessionObj.displayGroupID = newDisplayGroupID
+    newDG.save (err) ->
+      if err?
+        console.log "non-critical group-save err #{err}"
     sessionObj.save (err) ->
       updateDisplayGroupsOfIDs [oldDisplayGroupID, newDisplayGroupID], emitter, callback
       
@@ -139,6 +145,10 @@ exports.on_swipe = (socketID, swipeData, emitter, callback) -> #callback (err)
     floorDate = new Date(swyp.dateCreated.valueOf()-1000)
     searchDir = (swyp.direction == "out")? "in" : "out"
     Swyp.findOne {dateCreated: {$gt: floorDate}, direction: searchDir}, (err, matchSwyp) ->
+      if matchSwyp? == false
+        #nothing to do here, wait for pair
+        callback()
+        return
       console.log "found partner: #{matchSwyp}"
       if swyp.direction == "in"
         pairSwyps swyp, matchSwyp, emitter, callback
