@@ -71,6 +71,9 @@ updateDisplayGroupsOfIDs = (displayGroupIDs, emitter, callback) -> #callback (er
   #console.log "need to update each of #{displayGroupIDs}"
   for groupID in displayGroupIDs
     DisplayGroup.findOne {_id: makeObjectID(groupID)}, (err, group) =>
+      if group? == false
+        callback "no group found for groupID: #{groupID}"
+        return
       Session.find {displayGroupID: groupID}, (err, sessions) =>
         for session in sessions
           
@@ -78,7 +81,8 @@ updateDisplayGroupsOfIDs = (displayGroupIDs, emitter, callback) -> #callback (er
           boundarySize = {width: sessions.length * 320, height: sessions.length * 548}
           screenSize = {width: 320, height: 548}
           
-          emitData = {url: group.contentURL, boundarySize: boundarySize, screenSize: screenSize, origin: {x: screenSize.width * (sessions.length -1), y: screenSize.height * (sessions.length -1)}}
+          console.log "groupID:#{groupID} fetched group: #{group}"
+          emitData = {url: group.contentURL, boundarySize: boundarySize, screenSize: screenSize, origin: {x: screenSize.width * (sessions.length - 1), y: screenSize.height * (sessions.length - 1)}}
           console.log "updated id #{session.sessionID} with emit data #{emitData}"
 
           emitter session, emitData
@@ -90,9 +94,14 @@ exports.disafilliate = (socketID, emitter, callback) ->
     newDG = new DisplayGroup {}
     oldDisplayGroupID = sessionObj.displayGroupID
     newDisplayGroupID = newDG._id.toString()
-    #console.log "disafilliateing session with group #{oldDisplayGroupID } to id #{newDisplayGroupID}"
+    console.log "A: disafilliateing session with group #{oldDisplayGroupID } to id #{newDisplayGroupID}"
     sessionObj.displayGroupID = newDisplayGroupID
+    newDG.save (err) ->
+      if err?
+        console.log "non-critical group-save err #{err}"
     sessionObj.save (err) ->
+      newDisplayGroupID = newDG._id.toString()
+      console.log "B: disafilliateing session with group #{oldDisplayGroupID } to id #{newDisplayGroupID}"
       updateDisplayGroupsOfIDs [oldDisplayGroupID, newDisplayGroupID], emitter, callback
       
 
@@ -118,7 +127,7 @@ exports.on_swipe = (socketID, swipeData, emitter, callback) -> #callback (err)
     Swyp.findOne {dateCreated: {$gt: floorDate}, direction: searchDir}, (err, matchSwyp) ->
       if matchSwyp? == false
         #nothing to do here, wait for pair
-        callback(null)
+        callback()
         return
       console.log "found partner: #{matchSwyp}"
       if swyp.direction == "in"

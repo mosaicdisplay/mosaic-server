@@ -9,6 +9,10 @@ scrts = require("./stitchTestSecrets")
 
 describe 'stitch', =>
   generatedObjects = []
+  
+  errorCallback = (err) ->
+    should.not.exist err
+
   before (done) =>
     done()
   
@@ -80,9 +84,6 @@ describe 'stitch', =>
           console.log "error callback on disconnection #{error}"
   
   describe '#on_swipe', =>
-    errorCallback = (err) ->
-      should.not.exist err
-
     before (done) =>
       for i in [0..scrts.validIOIDsForAGroup.length - 1]
         do (i) =>
@@ -93,12 +94,11 @@ describe 'stitch', =>
             generatedObjects.push group
             if i == scrts.validIOIDsForAGroup.length - 1
               done()
-    
     it 'shouldnt emit anything on first swipe-in if no swipe-out occured, but should do callback with null params', (done) ->
-      stitch.on_swipe scrts.validIOIDsForAGroup[0], scrts.validSwipeInForSIOID(scrts.validIOIDsForAGroup[0]),((socketID, data) ->
+      stitch.on_swipe scrts.validIOIDsForAGroup[0], scrts.validSwipeInForSIOID(scrts.validIOIDsForAGroup[0]),((socketID, data) =>
         if socketID? == false
           done()), errorCallback
- 
+
     it 'should emit if swipe-out is registered right after swipe-in and include emit to used swipeOut socket id', (done) ->
       stitch.on_swipe scrts.validIOIDsForAGroup[1], scrts.validSwipeOutForSIOID(scrts.validIOIDsForAGroup[1]),((socketID, data) ->
         console.log "emitting data to socket: #{socketID}, data: #{data}"
@@ -142,13 +142,13 @@ describe 'stitch', =>
         done()
 
     it 'if group isnt shared, should emit to affectedgroup same sessionID, amongst others or alone', (done) ->
-      stitch.disafilliate scrts.validIODisaffiliateID, (socketID, data) =>
+      stitch.disafilliate scrts.validIODisaffiliateID, ((socketID, data) =>
         if socketID == scrts.validIODisaffiliateID
-          done()
+          done()), errorCallback
 
     it 'if group is, should emit to affectedgroup same sessionID, amongst others or alone', (done) ->
-      stitch.disafilliate scrts.validIODisaffiliateID, (socketID, data) =>
+      stitch.disafilliate scrts.validIODisaffiliateID, ((socketID, data) =>
         if socketID == scrts.validIODisaffiliateID
-          done()
+          done()), errorCallback
 
 
