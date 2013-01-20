@@ -1,6 +1,7 @@
 secrets = require("../secrets")
 crypto = require("crypto")
 mongoose = require("mongoose")
+_ = require('./underscore-min')
 
 Schema = mongoose.Schema
 makeObjectID = mongoose.mongo.BSONPure.ObjectID.fromString
