@@ -195,3 +195,10 @@ pairSwyps = (inSwyp, outSwyp, emitter, callback) -> #callback(err)
 
       inSwyp.remove()
       outSwyp.remove()
+
+exports.setContent = (socketID, data, emitter, callback) ->
+  Session.findOne {sessionID: socketID}, (err, sessionObj) ->
+    DisplayGroup.findOne {_id: makeObjectID(sessionObj.displayGroupID)}, (err, group) ->
+      group.contentURL = data.contentURL
+      group.save (err) ->
+        callback()

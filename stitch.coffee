@@ -99,6 +99,12 @@ stitchApp = zappa.app ->
         if err?
           console.log "error at disafiliate occured #{err}"
 
+  @on setContent: ->
+    stitch.setContent @id, @data, ((session, data) ->
+      socketForSocketID(session.sessionID).emit {updateDisplay: data}), (err) ->
+        if err?
+          console.log "error at setContent occured #{err}"
+
   # emitSampleToSocketID = (socketID, callback) =>
   #   socketForSocketID(socketID).emit updateDisplay: {url: sampleURL, boundarySize: {width: 1500, height: 997}, screenSize: {width: 320, height: 548}, origin: {x:320, y:200}}
 
