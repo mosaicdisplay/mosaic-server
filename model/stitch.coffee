@@ -68,7 +68,7 @@ exports.on_connection = (socketID, callback) -> #callback(err, session, group)
 #needs to both 1) update displayGroup boundary size
 #   2) update each associated session with a rect based on content display
 updateDisplayGroupsOfIDs = (displayGroupIDs, emitter, callback) -> #callback (err) #emitter(session, socketData)
-  console.log "need to update each of #{displayGroupIDs}"
+  #console.log "need to update each of #{displayGroupIDs}"
   for groupID in displayGroupIDs
     DisplayGroup.findOne {_id: makeObjectID(groupID)}, (err, group) =>
       Session.find {displayGroupID: groupID}, (err, sessions) =>
@@ -90,7 +90,7 @@ exports.disafilliate = (socketID, emitter, callback) ->
     newDG = new DisplayGroup {}
     oldDisplayGroupID = sessionObj.displayGroupID
     newDisplayGroupID = newDG._id.toString()
-    console.log "disafilliateing session with group #{oldDisplayGroupID } to id #{newDisplayGroupID}"
+    #console.log "disafilliateing session with group #{oldDisplayGroupID } to id #{newDisplayGroupID}"
     sessionObj.displayGroupID = newDisplayGroupID
     sessionObj.save (err) ->
       updateDisplayGroupsOfIDs [oldDisplayGroupID, newDisplayGroupID], emitter, callback
@@ -99,23 +99,46 @@ exports.disafilliate = (socketID, emitter, callback) ->
 #now passes session in emitter
 #callback fires after delete happens
 exports.on_disconnection = (socketID, emitter, callback) -> #emitter(session, socketData) #callback(err)
-  Session.findOne {sessionID: socketID}, (err, sessionObj) ->
-    exports.disafilliate socketID, emitter, (err) ->
+  Session.findOne {sessionID: socketID}, (err, sessionObj) =>
+    exports.disafilliate socketID, emitter, (err) =>
       #race condition with disafiliate's updateDisplayGroupsOfIDs call-- maybe makes sense just to leave hanging...
-      sessionObj.delete (err) ->
+      sessionObj.remove (err) =>
         callback err
 
 #we need to add a new swipe object, then check for partner one
 #if partner one, we need to connect them via a shared displayGroup and call updateDisplayGroupsOfIDs
-exports.on_swipe = (socketID, swipeData, emitter, callback) ->
+exports.on_swipe = (socketID, swipeData, emitter, callback) -> #callback (err)
   if swipeData? == false
     callback "no data"
     return
   swyp = new Swyp {sessionID: socketID, dateCreated: new Date(), swypPoint: swipeData?.swypPoint , screenSize: swipeData?.screenSize, direction: swipeData.direction}
   swyp.save (err) =>
-    floorDate = new Date(swyp.dataCreated.valueOf()-1000)
-    searchDir = "out"
-    if swyp.direction == "out"
-      searchDir = "in"
-    Swyp.findOne {dataCreated: {$gt: floorDate}, direction: searchDir}, (err, matchSwyp) ->
+    floorDate = new Date(swyp.dateCreated.valueOf()-1000)
+    searchDir = (swyp.direction == "out")? "in" : "out"
+    Swyp.findOne {dateCreated: {$gt: floorDate}, direction: searchDir}, (err, matchSwyp) ->
       console.log "found partner: #{matchSwyp}"
+      if swyp.direction == "in"
+        pairSwyps swyp, matchSwyp, emitter, callback
+      else
+        pairSwyps matchSwyp, swyp, emitter, callback
+
+pairSwyps = (inSwyp, outSwyp, emitter, callback) -> #callback(err)
+  Session.findOne {sessionID: outSwyp.sessionID}, (err, masterSession) ->
+    if masterSession? == false
+      callback "missing session of id #{outSwyp.sessionID}"
+      return
+    Session.findOne {sessionID: inSwyp.sessionID}, (err, receivingSession) ->
+      if receivingSession? == false
+        callback "missing session of id #{inSwyp.sessionID}"
+        return
+     
+      inSwyp.remove()
+      outSwyp.remove()
+ 
+      #if the same, we disaffiliate the master -- the inverse
+      if masterSession.displayGroupID == receivingSession.displayGroupID
+        exports.disafilliate masterSession.sessionID, emitter, callback
+      else #if different, we inherit the master's session
+        receivingSession.displayGroupID = masterSession.displayGroupID
+        receivingSession.save (err) =>
+          updateDisplayGroupsOfIDs [masterSession.displayGroupID], emitter, callback
