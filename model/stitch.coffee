@@ -94,14 +94,12 @@ exports.disafilliate = (socketID, emitter, callback) ->
     newDG = new DisplayGroup {}
     oldDisplayGroupID = sessionObj.displayGroupID
     newDisplayGroupID = newDG._id.toString()
-    console.log "A: disafilliateing session with group #{oldDisplayGroupID } to id #{newDisplayGroupID}"
+    #console.log "disafilliateing session with group #{oldDisplayGroupID } to id #{newDisplayGroupID}"
     sessionObj.displayGroupID = newDisplayGroupID
     newDG.save (err) ->
       if err?
         console.log "non-critical group-save err #{err}"
     sessionObj.save (err) ->
-      newDisplayGroupID = newDG._id.toString()
-      console.log "B: disafilliateing session with group #{oldDisplayGroupID } to id #{newDisplayGroupID}"
       updateDisplayGroupsOfIDs [oldDisplayGroupID, newDisplayGroupID], emitter, callback
       
 
