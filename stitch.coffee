@@ -85,8 +85,8 @@ stitchApp = zappa.app ->
     #delete session
 
   @on swypOccurred: ->
-    stitch.on_swipe @data, (socketID, data) ->
-      socketForSocketID(socketID).emit {updateDisplay: data}
+    stitch.on_swipe @id, @data, (session, data) ->
+      socketForSocketID(session.sessionID).emit {updateDisplay: data}
 
     console.log "swyp occurred with id #{@id}, data: #{@data}"
     # setTimeout ( =>
