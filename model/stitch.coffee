@@ -147,9 +147,17 @@ exports.on_swipe = (socketID, swipeData, emitter, callback) -> #callback (err)
     return
 
   Session.findOne {sessionID: socketID}, (err, session) ->
-    session.physicalSize = swipeData.screenSize
-    session.save()
-
+    updateSize = (newSession) =>
+      newSession.physicalSize = swipeData.screenSize
+      newSession.save (err) =>
+        if err?
+          console.log "error updating session screen size #{err}"
+    if session? == false
+      exports.on_connection socketID, (err, session, group) ->
+        updateSize session
+    else
+      updateSize session
+        
   swyp = new Swyp {sessionID: socketID, dateCreated: new Date(), swypPoint: swipeData?.swypPoint , screenSize: swipeData?.screenSize, direction: swipeData.direction}
   swyp.save (err) =>
     floorDate = new Date(swyp.dateCreated.valueOf()-2500)
