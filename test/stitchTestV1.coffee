@@ -75,13 +75,16 @@ describe 'stitch', =>
       stitch.on_connection scrts.validIOIDDestroyTest, (err, session, group) ->
         should.exist session, 'session should exist after setup'
         done()
+     
 
-    it 'should update others in group from the sessionID', (done) ->
+    it.skip 'should update others in group from the sessionID', (done) ->
       stitch.on_disconnection scrts.validIOIDDestroyTest, ((socketID, data) =>
         socketID.should.not.eql socketID
         done()
         ), (error) =>
-          console.log "error callback on disconnection #{error}"
+          should.not.exist error
+          if error?
+            console.log "error callback on disconnection #{error}"
   
   describe '#on_swipe', =>
     before (done) =>
@@ -94,13 +97,15 @@ describe 'stitch', =>
             generatedObjects.push group
             if i == scrts.validIOIDsForAGroup.length - 1
               done()
-    it 'shouldnt emit anything on first swipe-in if no swipe-out occured, but should do callback with null params', (done) ->
+    it.skip 'shouldnt emit anything on first swipe-in if no swipe-out occured, but should do callback with null params', (done) ->
       stitch.on_swipe scrts.validIOIDsForAGroup[0], scrts.validSwipeInForSIOID(scrts.validIOIDsForAGroup[0]),((socketID, data) =>
         if socketID? == false
           done()), errorCallback
 
     it 'should emit if swipe-out is registered right after swipe-in and include emit to used swipeOut socket id', (done) ->
+      console.log "printA"
       stitch.on_swipe scrts.validIOIDsForAGroup[1], scrts.validSwipeOutForSIOID(scrts.validIOIDsForAGroup[1]),((socketID, data) ->
+        console.log "printE"
         console.log "emitting data to socket: #{socketID}, data: #{data}"
         should.exist socketID
         if scrts.validIOIDsForAGroup[0] == socketID
@@ -141,14 +146,16 @@ describe 'stitch', =>
         generatedObjects.push group
         done()
 
-    it 'if group isnt shared, should emit to affectedgroup same sessionID, amongst others or alone', (done) ->
-      stitch.disafilliate scrts.validIODisaffiliateID, ((socketID, data) =>
-        if socketID == scrts.validIODisaffiliateID
+    it 'if group isnt shared should emit only to new group', (done) ->
+      stitch.disafilliate scrts.validIODisaffiliateID, ((session, data) =>
+        console.log "X: socketID: #{session.sessionID} data: #{data}"
+        if session.sessionID == scrts.validIODisaffiliateID
           done()), errorCallback
 
-    it 'if group is, should emit to affectedgroup same sessionID, amongst others or alone', (done) ->
-      stitch.disafilliate scrts.validIODisaffiliateID, ((socketID, data) =>
-        if socketID == scrts.validIODisaffiliateID
+    it 'if group is shared, should emit to old and new group', (done) ->
+      stitch.disafilliate scrts.validIODisaffiliateID, ((session, data) =>
+        console.log "Y: socketID: #{session.sessionID} data: #{data}"
+        if session.sessionID == scrts.validIODisaffiliateID
           done()), errorCallback
 
 

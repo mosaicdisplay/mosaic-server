@@ -74,9 +74,15 @@ updateDisplayGroupsOfIDs = (displayGroupIDs, emitter, callback) -> #callback (er
       if group? == false
         callback "no group found for groupID: #{groupID}"
         return
+
+      console.log "printB"
       Session.find {displayGroupID: groupID}, (err, sessions) =>
+        console.log "printC"
+        console.log "found #{sessions?.length} to update for groupID #{groupID}"
+        if sessions.length == 0
+          return
         for session in sessions
-          
+          console.log "printD"
           #replace me!
           boundarySize = {width: sessions.length * 320, height: sessions.length * 548}
           screenSize = {width: 320, height: 548}
