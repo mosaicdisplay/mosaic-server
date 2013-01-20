@@ -109,23 +109,28 @@ describe 'stitch', =>
         if scrts.validIOIDsForAGroup[0] == socketID
           done()), errorCallback
    
-    it 'should emit at least 3 times if swipe-out is registered then swipe-in between devices 1 and 2', (done) ->
+    it.only 'should emit at least 3 times if swipe-out is registered then swipe-in between devices 1 and 2', (done) ->
+      console.log "A"
       before (done) =>
-        stitch.on_swipe scrts.validIOIDsForAGroup[1], scrts.validSwipeInForSIOID(scrts.validIOIDsForAGroup[1]),(socketID, data) ->
-      emitCount = 0
+        console.log "B"
+        stitch.on_swipe scrts.validIOIDsForAGroup[1], scrts.validSwipeInForSIOID(scrts.validIOIDsForAGroup[1]),((socketID, data) ->
+        console.log "emitting data from first half of swype (IN)"), (err) ->
+        if err?
+          console.log "C setup test"
       stitch.on_swipe scrts.validIOIDsForAGroup[2], scrts.validSwipeOutForSIOID(scrts.validIOIDsForAGroup[2]),((socketID, data) ->
         console.log "Z: emitting data to socket: #{socketID}, data: #{data}"
         should.exist socketID
         emitCount = emitCount + 1
         if emitCount == 3
-          done()), errorCallback
+          done()), (err) ->
+            console.log "part two ended in callback block"
   
     it 'should deafiliate (have different displayGroupIDs), and emit three times if swipe out occurs from device 2 to device 1', (done) ->
       before (done) =>
         stitch.on_swipe scrts.validIOIDsForAGroup[2], scrts.validSwipeOutForSIOID(scrts.validIOIDsForAGroup[2]),(socketID, data) ->
       emitCount = 0
       stitch.on_swipe scrts.validIOIDsForAGroup[1], scrts.validSwipeInForSIOID(scrts.validIOIDsForAGroup[1]),((socketID, data) ->
-        console.log "emitting data to socket: #{socketID}, data: #{data}"
+        console.log "w ct: #{emitCount} emitting data to socket: #{socketID}, data: #{data}"
         should.exist socketID
         emitCount = emitCount + 1
         if emitCount == 3
