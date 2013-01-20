@@ -113,9 +113,9 @@ exports.on_swipe = (socketID, swipeData, emitter, callback) -> #callback (err)
     return
   swyp = new Swyp {sessionID: socketID, dateCreated: new Date(), swypPoint: swipeData?.swypPoint , screenSize: swipeData?.screenSize, direction: swipeData.direction}
   swyp.save (err) =>
-    floorDate = new Date(swyp.dataCreated.valueOf()-1000)
+    floorDate = new Date(swyp.dateCreated.valueOf()-1000)
     searchDir = (swyp.direction == "out")? "in" : "out"
-    Swyp.findOne {dataCreated: {$gt: floorDate}, direction: searchDir}, (err, matchSwyp) ->
+    Swyp.findOne {dateCreated: {$gt: floorDate}, direction: searchDir}, (err, matchSwyp) ->
       console.log "found partner: #{matchSwyp}"
       if swyp.direction == "in"
         pairSwyps swyp, matchSwyp, emitter, callback
