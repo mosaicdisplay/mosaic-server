@@ -3,6 +3,7 @@ crypto = require("crypto")
 mongoose = require("mongoose")
 _ = require('./underscore-min')
 
+
 Schema = mongoose.Schema
 makeObjectID = mongoose.mongo.BSONPure.ObjectID.fromString
 exports.makeObjectID = makeObjectID
@@ -61,6 +62,8 @@ exports.on_connection = (socketID, callback) -> #callback(err, session, group)
   session = new Session()
   session.displayGroupID = group._id.toString()
   session.sessionID = socketID
+  session.origin = {x: 1, y: 2}
+  session.physicalSize = {width: 3, height: 4}
   group.contentURL = "http://i.imgur.com/Us4J3C4.jpg"
   group.save (err) =>
     session.save (err) =>
@@ -76,14 +79,13 @@ updateDisplayGroupsOfIDs = (displayGroupIDs, emitter, callback) -> #callback (er
         callback "no group found for groupID: #{groupID}"
         return
 
-      console.log "printB"
       Session.find {displayGroupID: groupID}, (err, sessions) =>
-        console.log "found #{sessions?.length} to update for groupID #{groupID}"
         if sessions.length == 0
           return
 
-        minX = _.min sessions, (session) -> session.origin.x
-        minY = _.min sessions, (session) -> session.origin.y
+        minX = _.min(_.map(sessions, (session) -> session.origin.x))
+        minY = _.min(_.map(sessions, (session) -> session.origin.y))
+        #minY = _.min sessions, (session) -> session.origin.y
 
         for session in sessions
           session.origin.x -= minX

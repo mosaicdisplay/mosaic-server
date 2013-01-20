@@ -74,28 +74,30 @@ stitchApp = zappa.app ->
   #client2server
   @on connection: ->
     console.log "connected id#{@id}"
-    stitch.on_connection @id
+    stitch.on_connection @id, (err) ->
+      console.log "on_connection err #{err}"
     #create session
     #create display group
     #adding new session, and creating new displayGroup
   
   @on disconnect: ->
-    stitch.on_disconnection @id
-    console.log "disconnected id#{@id}"
-    #delete session
+    stitch.on_disconnection @id, ((session, data) ->
+      socketForSocketID(session.sessionID).emit {updateDisplay: data}), (err) ->
+        console.log "on_disconnection err #{err}"
 
   @on swypOccurred: ->
-    stitch.on_swipe @id, @data, (session, data) ->
-      socketForSocketID(session.sessionID).emit {updateDisplay: data}
+    stitch.on_swipe @id, @data, ((session, data) ->
+      socketForSocketID(session.sessionID).emit {updateDisplay: data}), (err) ->
+        if err?
+          console.log "error at swyp occured #{err}"
 
     console.log "swyp occurred with id #{@id}, data: #{@data}"
-    # setTimeout ( =>
-    #   console.log "emitting sample to id #{@id}"
-    #   emitSampleToSocketID(@id)), 1000
 
   @on disaffiliate: ->
-    stitch.disaffiliate @id
-    console.log "disafiliate called with id #{@id}"
+    stitch.disaffiliate @id, ((session, data) ->
+      socketForSocketID(session.sessionID).emit {updateDisplay: data}), (err) ->
+        if err?
+          console.log "error at disafiliate occured #{err}"
 
   # emitSampleToSocketID = (socketID, callback) =>
   #   socketForSocketID(socketID).emit updateDisplay: {url: sampleURL, boundarySize: {width: 1500, height: 997}, screenSize: {width: 320, height: 548}, origin: {x:320, y:200}}

@@ -103,9 +103,7 @@ describe 'stitch', =>
           done()), errorCallback
 
     it 'should emit if swipe-out is registered right after swipe-in and include emit to used swipeOut socket id', (done) ->
-      console.log "printA"
       stitch.on_swipe scrts.validIOIDsForAGroup[1], scrts.validSwipeOutForSIOID(scrts.validIOIDsForAGroup[1]),((socketID, data) ->
-        console.log "printE"
         console.log "emitting data to socket: #{socketID}, data: #{data}"
         should.exist socketID
         if scrts.validIOIDsForAGroup[0] == socketID
