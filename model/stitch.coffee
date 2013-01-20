@@ -68,7 +68,7 @@ exports.on_connection = (socketID, callback) -> #callback(err, session, group)
 #needs to both 1) update displayGroup boundary size
 #   2) update each associated session with a rect based on content display
 updateDisplayGroupsOfIDs = (displayGroupIDs, emitter, callback) -> #callback (err) #emitter(session, socketData)
-  console.log "need to update each of #{displayGroupIDs}"
+  #console.log "need to update each of #{displayGroupIDs}"
   for groupID in displayGroupIDs
     DisplayGroup.findOne {_id: makeObjectID(groupID)}, (err, group) =>
       Session.find {displayGroupID: groupID}, (err, sessions) =>
@@ -90,7 +90,7 @@ exports.disafilliate = (socketID, emitter, callback) ->
     newDG = new DisplayGroup {}
     oldDisplayGroupID = sessionObj.displayGroupID
     newDisplayGroupID = newDG._id.toString()
-    console.log "disafilliateing session with group #{oldDisplayGroupID } to id #{newDisplayGroupID}"
+    #console.log "disafilliateing session with group #{oldDisplayGroupID } to id #{newDisplayGroupID}"
     sessionObj.displayGroupID = newDisplayGroupID
     sessionObj.save (err) ->
       updateDisplayGroupsOfIDs [oldDisplayGroupID, newDisplayGroupID], emitter, callback
@@ -99,10 +99,10 @@ exports.disafilliate = (socketID, emitter, callback) ->
 #now passes session in emitter
 #callback fires after delete happens
 exports.on_disconnection = (socketID, emitter, callback) -> #emitter(session, socketData) #callback(err)
-  Session.findOne {sessionID: socketID}, (err, sessionObj) ->
-    exports.disafilliate socketID, emitter, (err) ->
+  Session.findOne {sessionID: socketID}, (err, sessionObj) =>
+    exports.disafilliate socketID, emitter, (err) =>
       #race condition with disafiliate's updateDisplayGroupsOfIDs call-- maybe makes sense just to leave hanging...
-      sessionObj.remove (err) ->
+      sessionObj.remove (err) =>
         callback err
 
 #we need to add a new swipe object, then check for partner one
