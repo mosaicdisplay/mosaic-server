@@ -87,6 +87,8 @@ updateDisplayGroupsOfIDs = (displayGroupIDs, emitter, callback) -> #callback (er
           minX = _.min(_.map(sessions, (session) -> session.origin.x))
           minY = _.min(_.map(sessions, (session) -> session.origin.y))
 
+          console.log "updateDisplayGroupsOfIDs: minx and miny are #{minX} #{minY}"
+
           for session in sessions
             session.origin.x -= minX
             session.origin.y -= minY
@@ -180,11 +182,14 @@ pairSwyps = (inSwyp, outSwyp, emitter, callback) -> #callback(err)
         console.log "affiliating #{masterSession.sessionID} and #{receivingSession.sessionID}"
         receivingSession.displayGroupID = masterSession.displayGroupID
 
+
         absoluteSwypX = masterSession.origin.x + outSwyp.swypPoint.x
         receivingSession.origin.x = absoluteSwypX - inSwyp.swypPoint.x
 
         absoluteSwypY = masterSession.origin.y + outSwyp.swypPoint.y
         receivingSession.origin.y = absoluteSwypY - inSwyp.swypPoint.y
+
+        console.log "receivingSession origin is #{JSON.stringify recievingSession.origin}"
 
         receivingSession.save (err) =>
           updateDisplayGroupsOfIDs [masterSession.displayGroupID], emitter, callback
