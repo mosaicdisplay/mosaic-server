@@ -172,9 +172,6 @@ pairSwyps = (inSwyp, outSwyp, emitter, callback) -> #callback(err)
         callback "missing session of id #{inSwyp.sessionID}"
         return
      
-      inSwyp.remove()
-      outSwyp.remove()
- 
       #if the same, we disaffiliate the master -- the inverse
       if masterSession.displayGroupID == receivingSession.displayGroupID
         console.log "disaffiliating #{masterSession.sessionID} and #{receivingSession.sessionID}"
@@ -182,5 +179,15 @@ pairSwyps = (inSwyp, outSwyp, emitter, callback) -> #callback(err)
       else #if different, we inherit the master's session
         console.log "affiliating #{masterSession.sessionID} and #{receivingSession.sessionID}"
         receivingSession.displayGroupID = masterSession.displayGroupID
+
+        absoluteSwypX = masterSession.origin.x + outSwyp.swypPoint.x
+        receivingSession.origin.x = absoluteSwypX - inSwyp.swypPoint.x
+
+        absoluteSwypY = masterSession.origin.y + outSwyp.swypPoint.y
+        receivingSession.origin.y = absoluteSwypY - inSwyp.swypPoint.y
+
         receivingSession.save (err) =>
           updateDisplayGroupsOfIDs [masterSession.displayGroupID], emitter, callback
+
+      inSwyp.remove()
+      outSwyp.remove()
